@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hand Histories — JS Academy</title>
+    <link rel="stylesheet" href="hh.css" />
+  </head>
+  <body>
+    <div class="hh-shell">
+      <div class="hh-frame">
+        <div class="hh-frame-inner">
+          <header class="hh-header">
+            <h1 class="hh-title">Hand Histories</h1>
+            <nav class="hh-nav" id="mode-nav">
+              <button type="button" data-mode="create">Créer</button>
+              <button type="button" data-mode="list">Liste</button>
+              <button type="button" data-mode="view">Visualiser</button>
+            </nav>
+          </header>
+          <p class="hh-msg" id="msg" aria-live="polite"></p>
+
+          <section id="panel-create" hidden>
+            <div class="hh-panel-block hh-create-toolbar">
+              <button type="button" class="hh-btn hh-btn--primary" id="btn-save-hand">
+                <span class="hh-btn-save-inner">
+                  <span class="hh-btn-save-spinner" aria-hidden="true"></span>
+                  <span class="hh-btn-save-label">Enregistrer</span>
+                </span>
+              </button>
+              <span class="hh-muted" id="create-hand-id"></span>
+            </div>
+            <div id="create-setup-panel" class="hh-panel-block hh-create-setup">
+              <div id="create-setup-collapsed-bar" class="hh-create-setup-collapsed" hidden>
+                <span id="create-setup-summary" class="hh-create-setup-summary"></span>
+                <button type="button" class="hh-btn" id="btn-expand-setup">Modifier les paramètres</button>
+              </div>
+              <div id="create-setup-form-shell">
+                <h2 class="hh-create-setup-title" id="setup-title">Paramètres de la main</h2>
+                <form id="form-setup">
+                  <section class="hh-create-setup-section" aria-labelledby="setup-section-general">
+                    <h3 class="hh-create-setup-section-title" id="setup-section-general">Général</h3>
+                    <div class="hh-grid">
+                      <div>
+                        <label class="hh-label">Nombre de joueurs (2–10)</label>
+                        <input class="hh-input" name="player_count" type="number" min="2" max="10" value="6" required />
+                      </div>
+                      <div>
+                        <label class="hh-label">Petite blinde (BB)</label>
+                        <input class="hh-input" name="small_blind_bb" type="number" step="0.01" min="0.01" value="0.5" required />
+                      </div>
+                      <div>
+                        <label class="hh-label">Grosse blinde (BB)</label>
+                        <input class="hh-input" name="big_blind_bb" type="number" step="0.01" min="0.01" value="1" required />
+                      </div>
+                      <div>
+                        <label class="hh-label">Dead money (BB)</label>
+                        <input class="hh-input" name="dead_money_bb" type="number" step="0.01" min="0" value="0" />
+                      </div>
+                      <div>
+                        <label class="hh-label">Premier à parler</label>
+                        <select class="hh-select" name="first_to_act" id="setup-first-act"></select>
+                      </div>
+                    </div>
+                  </section>
+                  <section class="hh-create-setup-section" aria-labelledby="setup-section-stacks">
+                    <h3 class="hh-create-setup-section-title" id="setup-section-stacks">Stacks (BB)</h3>
+                    <div class="hh-grid" id="setup-stacks"></div>
+                  </section>
+                  <section class="hh-create-setup-section" aria-labelledby="setup-section-mises">
+                    <h3 class="hh-create-setup-section-title" id="setup-section-mises">Mises (BB)</h3>
+                    <div class="hh-grid" id="setup-antes"></div>
+                  </section>
+                  <div class="hh-create-setup-actions">
+                    <button type="button" class="hh-btn" id="setup-cancel">Annuler</button>
+                    <button type="submit" class="hh-btn hh-btn--primary">Valider</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+            <div class="hh-panel-block" id="create-editor" hidden>
+              <div class="hh-toolbar">
+                <label class="hh-label" style="display: inline-flex; align-items: center; gap: 0.35rem; max-width: none">
+                  Titre
+                  <input type="text" class="hh-input" id="hand-title" style="max-width: 280px" />
+                </label>
+                <label class="hh-label" style="display: inline-flex; align-items: center; gap: 0.35rem; max-width: none">
+                  Tags (virgule)
+                  <input type="text" class="hh-input" id="hand-tags" style="max-width: 280px" placeholder="3bet, SBvBB" />
+                </label>
+              </div>
+              <p class="hh-label" style="margin-top: 0.65rem">Cartes (aucun doublon)</p>
+              <p class="hh-cards-hint">
+                Cliquez sur les deux cartes sous chaque position pour choisir la main. Sur la table : dos tant que la paire n’est pas
+                complète ici ; faces visibles une fois les deux cartes choisies.
+              </p>
+              <div id="hole-card-grid" class="hh-grid"></div>
+              <div class="hh-breadcrumb" id="breadcrumb"></div>
+              <div class="hh-action-bar-wrap">
+                <div class="hh-action-bar" id="action-bar"></div>
+                <div class="hh-raise-row" id="raise-row" hidden>
+                  <input type="number" step="0.01" min="0" id="raise-amount" />
+                  <button type="button" class="hh-btn hh-btn--primary" id="btn-raise-ok">OK</button>
+                </div>
+              </div>
+              <div class="hh-toolbar" style="margin-top: 0.65rem">
+                <button type="button" class="hh-btn" id="btn-round-end" hidden>Fermer le tour d’enchères</button>
+                <button type="button" class="hh-btn hh-btn--primary" id="btn-board" hidden>Ajouter board</button>
+              </div>
+              <div class="hh-table-wrap">
+                <div class="poker-table" id="poker-table"></div>
+              </div>
+            </div>
+          </section>
+
+          <section id="panel-list" hidden>
+            <div class="hh-panel-block hh-toolbar">
+              <button type="button" class="hh-btn hh-btn--primary" id="btn-list-create">Créer une main</button>
+              <label class="hh-label" style="max-width: none; display: flex; flex-direction: column; gap: 0.2rem">
+                Filtrer par tags (OR)
+                <input type="text" class="hh-input" id="list-tag-filter" style="max-width: 320px" placeholder="tag1, tag2" />
+              </label>
+              <button type="button" class="hh-btn" id="btn-list-refresh">Actualiser</button>
+              <button type="button" class="hh-btn hh-btn--primary" id="btn-list-view-selected">Visualiser la sélection</button>
+            </div>
+            <div class="hh-panel-block" style="overflow: auto">
+              <table class="hh-table-list" id="hands-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>Titre</th>
+                    <th>Date</th>
+                    <th>Joueurs</th>
+                    <th>Tags</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="hands-tbody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="panel-view" hidden>
+            <div class="hh-panel-block hh-view-controls">
+              <button type="button" class="hh-btn" id="v-prev">◀</button>
+              <button type="button" class="hh-btn" id="v-next">▶</button>
+              <span style="color: var(--hh-muted); font-size: 0.8rem" id="view-step-label"></span>
+              <button type="button" class="hh-btn" id="v-hand-prev">HH ◀</button>
+              <button type="button" class="hh-btn" id="v-hand-next">HH ▶</button>
+            </div>
+            <div class="hh-panel-block" id="view-hand-title"></div>
+            <div class="hh-table-wrap">
+              <div class="poker-table" id="view-poker-table"></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div class="hh-modal" id="modal-card-picker" hidden>
+      <div class="hh-modal-dialog hh-modal-dialog--wide" role="dialog" aria-modal="true" aria-labelledby="card-picker-title">
+        <h2 class="hh-modal-title" id="card-picker-title">Choisir les cartes</h2>
+        <p id="card-picker-help" class="hh-cards-hint"></p>
+        <div id="card-picker-matrix" class="hh-card-matrix-wrap"></div>
+        <div id="card-picker-selection" class="hh-card-picker-selection" aria-live="polite"></div>
+        <div class="hh-card-picker-actions">
+          <button type="button" class="hh-btn" id="card-picker-cancel">Annuler</button>
+          <button type="button" class="hh-btn hh-btn--primary" id="card-picker-ok">Valider</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.0/dist/umd/supabase.js"></script>
+    <script src="js/positions.js"></script>
+    <script src="js/hhReplayCore.js"></script>
+    <script src="js/hhCards.js"></script>
+    <script src="js/hhEngine.js"></script>
+    <script src="js/hhApp.js"></script>
+  </body>
+</html>

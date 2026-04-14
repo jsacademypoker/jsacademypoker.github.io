@@ -1,0 +1,1378 @@
+:root {
+  --hh-bg: #0d0d0d;
+  --hh-bg-elev: #121212;
+  --hh-text: #e8e6e3;
+  --hh-muted: #9a9590;
+  --hh-gold: #c5a059;
+  --hh-gold-dim: #8a7344;
+  --hh-green: #1e2d24;
+  --hh-green-bright: #1e5631;
+  --hh-orange: #fbaa33;
+  --hh-panel: rgba(18, 22, 20, 0.92);
+  --hh-border: rgba(197, 160, 89, 0.35);
+  --hh-radius: 12px;
+  --hh-font: system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: var(--hh-font);
+  color: var(--hh-text);
+  background-color: var(--hh-bg);
+  background-image:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(30, 86, 49, 0.18), transparent 55%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+  background-size: auto, 240px 240px;
+}
+
+.hh-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1rem 1rem 2rem;
+}
+
+.hh-frame {
+  position: relative;
+  padding: 1px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--hh-gold) 0%, rgba(197, 160, 89, 0.15) 42%, var(--hh-green) 100%);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+}
+
+.hh-frame-inner {
+  background: var(--hh-bg-elev);
+  border-radius: 13px;
+  padding: 1rem 1.1rem 1.25rem;
+}
+
+.hh-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.hh-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.hh-nav {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.hh-nav button {
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 0.45rem 0.95rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid var(--hh-border);
+  background: rgba(30, 45, 36, 0.65);
+  color: var(--hh-text);
+}
+
+.hh-nav button.is-active {
+  border-color: var(--hh-gold);
+  color: #fff;
+  background: linear-gradient(180deg, rgba(197, 160, 89, 0.35) 0%, rgba(30, 45, 36, 0.95) 100%);
+}
+
+.hh-msg {
+  min-height: 1.25rem;
+  font-size: 0.85rem;
+  margin: 0.35rem 0 0.75rem;
+  color: var(--hh-muted);
+}
+
+.hh-msg.is-err {
+  color: #ff8a80;
+}
+
+.hh-msg.is-ok {
+  color: #8bc34a;
+}
+
+.hh-panel-block {
+  background: var(--hh-panel);
+  border: 1px solid rgba(197, 160, 89, 0.22);
+  border-radius: var(--hh-radius);
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.hh-create-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.hh-create-setup-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 0.65rem;
+  color: var(--hh-text);
+}
+
+.hh-create-setup-collapsed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.hh-create-setup-summary {
+  font-size: 0.86rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.hh-create-setup-actions {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.hh-create-setup-section {
+  margin: 0;
+  padding: 0.65rem 0 0;
+  border: 0;
+  /* border-top: 1px solid rgba(197, 160, 89, 0.2); */
+}
+
+.hh-create-setup-section:first-of-type {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.hh-create-setup-section-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--hh-gold);
+  margin: 0 0 0.55rem;
+}
+
+.hh-create-setup-section-hint {
+  margin: 0 0 0.4rem;
+}
+
+.hh-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.hh-btn {
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid var(--hh-border);
+  background: rgba(30, 45, 36, 0.85);
+  color: var(--hh-text);
+}
+
+.hh-btn--primary {
+  border-color: rgba(197, 160, 89, 0.65);
+  background: linear-gradient(180deg, rgba(197, 160, 89, 0.45) 0%, rgba(40, 52, 44, 0.95) 100%);
+  color: #fff;
+}
+
+.hh-btn--danger {
+  border-color: rgba(255, 100, 80, 0.45);
+  color: #ffcdd2;
+}
+
+.hh-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.hh-btn--icon {
+  padding: 0.32rem 0.4rem;
+  min-width: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hh-btn-icon svg {
+  display: block;
+}
+
+.hh-list-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+  white-space: nowrap;
+}
+
+#btn-save-hand:disabled.is-loading {
+  opacity: 0.95;
+  cursor: wait;
+}
+
+#btn-save-hand .hh-btn-save-inner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+#btn-save-hand .hh-btn-save-spinner {
+  display: none;
+  box-sizing: border-box;
+  width: 0.95em;
+  height: 0.95em;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  border-top-color: rgba(201, 162, 89, 0.95);
+  border-radius: 50%;
+  animation: hh-spin 0.7s linear infinite;
+}
+
+#btn-save-hand.is-loading .hh-btn-save-spinner {
+  display: block;
+}
+
+@keyframes hh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.hh-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--hh-muted);
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.hh-input,
+.hh-select {
+  width: 100%;
+  max-width: 220px;
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(197, 160, 89, 0.25);
+  background: #0a0e0c;
+  color: var(--hh-text);
+  font-size: 0.9rem;
+}
+
+.hh-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.55rem;
+}
+
+.hh-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.35rem;
+  font-size: 0.78rem;
+  margin: 0.5rem 0;
+  min-height: 1.5rem;
+}
+
+.hh-breadcrumb .crumb-btn {
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--hh-gold);
+  text-decoration: underline;
+  font-size: inherit;
+  padding: 0;
+}
+
+.hh-breadcrumb .crumb-current {
+  color: var(--hh-text);
+  font-weight: 600;
+}
+
+.hh-breadcrumb .crumb-btn.is-current-node {
+  color: var(--hh-text);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.hh-breadcrumb .sep {
+  color: var(--hh-muted);
+  user-select: none;
+}
+
+.hh-breadcrumb .crumb-street {
+  color: var(--hh-muted);
+  font-weight: 600;
+  font-size: 0.72em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.hh-action-bar-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.5rem 0;
+}
+
+.hh-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.hh-action-bar button {
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+  font-weight: 600;
+  font-size: 0.82rem;
+  border: 1px solid rgba(197, 160, 89, 0.45);
+  background: rgba(20, 28, 24, 0.95);
+  color: var(--hh-text);
+}
+
+.hh-table-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 5rem 0;
+}
+
+.poker-table {
+  box-sizing: border-box;
+  aspect-ratio: 1.45 / 1;
+  width: min(100%, 440px);
+  height: auto;
+  min-height: 210px;
+  max-width: 100%;
+  position: relative;
+  overflow: visible;
+  flex-shrink: 0;
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.5)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.32));
+}
+
+/* Agrandissement global ×2 (cartes, sièges, jetons, dealer, etc.) — sans toucher au panneau « Cartes » (hors .poker-table) */
+.poker-table.poker-table--hh {
+  zoom: 1.7;
+}
+
+.poker-table-oval {
+  /* Sièges : rayon « rebord » dans hhReplayCore.js (feltInsetPct) — garder la même valeur */
+  --felt-rx: 47%;
+  --felt-ry: 47%;
+  --rail-outer: #2a1810;
+  --rail-mid: #5c3d26;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse 98% 96% at 50% 50%, var(--rail-mid) 0%, var(--rail-outer) 52%, #1a0f0a 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -6px 16px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+.poker-table-track {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.poker-table-dealer-btn {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 4;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.poker-table-dealer-btn-disc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: rgba(255, 246, 224, 0.96);
+  background: radial-gradient(circle at 34% 30%, rgba(88, 72, 48, 0.98) 0%, rgba(36, 28, 18, 0.98) 48%, #100c08 100%);
+  border: 2px solid rgba(201, 162, 39, 0.88);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.48);
+}
+
+.poker-table-bet-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  padding: 0.1rem 0.34rem;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: rgba(248, 250, 248, 0.95);
+  background: rgba(12, 20, 26, 0.88);
+  border: 1px solid rgba(201, 162, 39, 0.4);
+  white-space: nowrap;
+}
+
+.poker-table-seat {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5;
+  min-width: 4.3rem;
+  max-width: 6.7rem;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.28rem;
+  transform: translate(-50%, -50%);
+}
+
+.poker-table-seat::before {
+  content: '';
+  position: absolute;
+  width: 4rem;
+  height: 4rem;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  z-index: 0;
+  background: radial-gradient(circle at 35% 30%, rgba(55, 72, 82, 0.95) 0%, rgba(18, 26, 32, 0.98) 55%, #0a1014 100%);
+  border: 4px solid rgba(90, 108, 118, 0.5);
+  box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.55);
+}
+
+.poker-table-seat--interactive {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.poker-table-seat-label {
+  position: relative;
+  z-index: 1;
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-align: center;
+  padding: 0.25rem 0.45rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(32, 44, 52, 0.96) 0%, rgba(14, 20, 26, 0.98) 100%);
+  border: 1px solid rgba(100, 118, 128, 0.45);
+  color: rgba(220, 232, 228, 0.92);
+}
+
+.poker-table-seat.is-sb .poker-table-seat-label,
+.poker-table-seat.is-bb .poker-table-seat-label {
+  border-color: rgba(201, 162, 39, 0.55);
+  color: rgba(255, 230, 180, 0.95);
+}
+
+.poker-table-seat.is-active::before {
+  border-color: rgba(201, 162, 89, 0.85);
+  box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.25);
+}
+
+.poker-table-seat.is-folded {
+  filter: grayscale(0.5) brightness(0.72);
+}
+
+.poker-table-felt {
+  position: absolute;
+  left: calc(50% - var(--felt-rx));
+  top: calc(50% - var(--felt-ry));
+  width: calc(2 * var(--felt-rx));
+  height: calc(2 * var(--felt-ry));
+  border-radius: 50%;
+  z-index: 2;
+  overflow: hidden;
+  background-color: #0e3024;
+  background-image:
+    radial-gradient(ellipse 95% 88% at 50% 38%, rgba(45, 120, 82, 0.55) 0%, transparent 58%),
+    radial-gradient(ellipse 70% 65% at 50% 52%, #1a6b4a 0%, #0d3d2a 48%, #061f16 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.14'/%3E%3C/svg%3E");
+  background-size: auto, auto, 280px 280px;
+  border: 1px solid rgba(55, 110, 85, 0.55);
+}
+
+.poker-table-felt-stats {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.35rem;
+  text-align: center;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.poker-table-dead {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #f0d878;
+}
+
+.hh-pot-display {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 0 12px rgba(197, 160, 89, 0.5);
+}
+
+/* Board centré sur le tapis ; le pot est au-dessus (hors boîte de centrage) */
+.hh-board-wrap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hh-board-wrap .hh-board-row {
+  margin-top: 0;
+}
+
+.hh-pot-display--board {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 0.35rem;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.hh-board-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: center;
+  margin-top: 0.15rem;
+}
+
+.hh-board-row--fixed {
+  flex-wrap: nowrap;
+}
+
+.hh-board-slot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.hh-board-slot--empty .hh-playing-card--board-placeholder {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.poker-table--hh .hh-playing-card--board-placeholder {
+  width: 2.86rem;
+  height: 3.965rem;
+  flex-shrink: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Dock siège HH : cartes « coupées » par le bandeau stack */
+.hh-seat-dock {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  pointer-events: none;
+}
+
+.hh-seat-cards-clip {
+  width: 100%;
+  max-width: 6.5rem;
+  /* Fenêtre : on garde le haut des cartes intact ; seul le bas disparaît (overflow bas).
+     Petit padding haut pour les dos légèrement pivotés (coins hors boîte de mise en page). */
+  height: 2.58rem;
+  padding-top: 0.12rem;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+.hh-seat-cards-clip--empty {
+  height: 0;
+  min-height: 0;
+  overflow: visible;
+}
+
+.hh-hole-cards {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  margin-top: 0;
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.hh-hole-cards .hh-playing-card + .hh-playing-card {
+  margin-left: -0.936rem;
+}
+
+/* Table HH : pas de pastilles position ; cartes coupées au-dessus du bandeau stack */
+.poker-table--hh .poker-table-seat::before {
+  display: none;
+}
+
+.poker-table--hh .poker-table-seat {
+  width: max-content;
+  min-width: 3.2rem;
+  max-width: 7rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  /* Pas de padding : le point (left,top) + translate(-50%,-50%) = centre du bloc [cartes+stack] */
+  padding: 0;
+}
+
+.poker-table--hh .hh-hole-cards {
+  margin-top: 0;
+  align-items: flex-start;
+}
+
+.poker-table--hh .hh-hole-cards--peekable {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.poker-table--hh .hh-hole-cards .hh-playing-card + .hh-playing-card {
+  margin-left: -0.676rem;
+}
+
+.poker-table--hh .hh-playing-card {
+  width: 2.86rem;
+  height: 3.965rem;
+  border-radius: 7px;
+}
+
+/* Cartes coupées : rang + couleur calés en haut, lisibles dans la fenêtre */
+.poker-table--hh .hh-hole-cards > .hh-playing-card:not(.hh-playing-card--back) {
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.poker-table--hh .hh-hole-cards > .hh-playing-card:not(.hh-playing-card--back) .hh-playing-card-inner {
+  height: auto;
+  width: 100%;
+  min-height: 0;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 0.08rem 0.18rem 0;
+  gap: 0.02rem;
+}
+
+/* Dos : pas de translate (ça remontait la carte et coupait le haut). Pivot haut = le haut reste dans la fenêtre, le bas part sous la coupe */
+.poker-table--hh .hh-hole-cards > .hh-playing-card--back.hh-playing-card--tilt-l {
+  transform-origin: top center;
+  transform: rotate(-5deg);
+}
+
+.poker-table--hh .hh-hole-cards > .hh-playing-card--back.hh-playing-card--tilt-r {
+  transform-origin: top center;
+  transform: rotate(5deg);
+}
+
+/* Trou : pas de caractère de couleur — fond teinté par enseigne */
+.poker-table--hh .hh-hole-cards .hh-playing-card-suit {
+  display: none;
+}
+
+/* Rectos HH (trou + board) : dark mode */
+.poker-table--hh .hh-hole-cards > .hh-playing-card--heart:not(.hh-playing-card--back),
+.poker-table--hh .hh-board-row .hh-playing-card--heart:not(.hh-playing-card--back) {
+  background:
+    linear-gradient(165deg, rgba(255, 120, 100, 0.14) 0%, transparent 42%),
+    linear-gradient(152deg, #2a1418 0%, #1a0a0c 55%, #0d0608 100%);
+  border-color: rgba(180, 60, 70, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 160, 150, 0.12),
+    0 2px 10px rgba(0, 0, 0, 0.55);
+}
+
+.poker-table--hh .hh-hole-cards > .hh-playing-card--diamond:not(.hh-playing-card--back),
+.poker-table--hh .hh-board-row .hh-playing-card--diamond:not(.hh-playing-card--back) {
+  background:
+    linear-gradient(165deg, rgba(100, 180, 255, 0.16) 0%, transparent 42%),
+    linear-gradient(152deg, #0f1a28 0%, #0a121c 55%, #060a10 100%);
+  border-color: rgba(50, 100, 160, 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(130, 190, 255, 0.14),
+    0 2px 10px rgba(0, 0, 0, 0.55);
+}
+
+.poker-table--hh .hh-hole-cards > .hh-playing-card--spade:not(.hh-playing-card--back),
+.poker-table--hh .hh-board-row .hh-playing-card--spade:not(.hh-playing-card--back) {
+  background:
+    linear-gradient(165deg, rgba(160, 175, 195, 0.12) 0%, transparent 45%),
+    linear-gradient(152deg, #1c2228 0%, #12161a 55%, #080a0c 100%);
+  border-color: rgba(70, 82, 96, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(200, 210, 220, 0.08),
+    0 2px 10px rgba(0, 0, 0, 0.55);
+}
+
+.poker-table--hh .hh-hole-cards > .hh-playing-card--club:not(.hh-playing-card--back),
+.poker-table--hh .hh-board-row .hh-playing-card--club:not(.hh-playing-card--back) {
+  background:
+    linear-gradient(165deg, rgba(100, 200, 130, 0.14) 0%, transparent 42%),
+    linear-gradient(152deg, #0f1e14 0%, #0a1410 55%, #050a08 100%);
+  border-color: rgba(40, 110, 65, 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(120, 210, 150, 0.1),
+    0 2px 10px rgba(0, 0, 0, 0.55);
+}
+
+.poker-table--hh .hh-hole-cards > .hh-playing-card--heart:not(.hh-playing-card--back) .hh-playing-card-rank,
+.poker-table--hh .hh-board-row .hh-playing-card--heart:not(.hh-playing-card--back) .hh-playing-card-rank {
+  color: #ffc9c2;
+  text-shadow: 0 0 10px rgba(255, 100, 90, 0.35), 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+.poker-table--hh .hh-hole-cards > .hh-playing-card--diamond:not(.hh-playing-card--back) .hh-playing-card-rank,
+.poker-table--hh .hh-board-row .hh-playing-card--diamond:not(.hh-playing-card--back) .hh-playing-card-rank {
+  color: #b8dcff;
+  text-shadow: 0 0 10px rgba(80, 160, 255, 0.35), 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+.poker-table--hh .hh-hole-cards > .hh-playing-card--spade:not(.hh-playing-card--back) .hh-playing-card-rank,
+.poker-table--hh .hh-board-row .hh-playing-card--spade:not(.hh-playing-card--back) .hh-playing-card-rank {
+  color: #e2e8ef;
+  text-shadow: 0 0 8px rgba(180, 195, 210, 0.2), 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.poker-table--hh .hh-hole-cards > .hh-playing-card--club:not(.hh-playing-card--back) .hh-playing-card-rank,
+.poker-table--hh .hh-board-row .hh-playing-card--club:not(.hh-playing-card--back) .hh-playing-card-rank {
+  color: #c8f0d0;
+  text-shadow: 0 0 10px rgba(100, 220, 140, 0.28), 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+.poker-table--hh .hh-board-row .hh-playing-card--heart:not(.hh-playing-card--back) .hh-playing-card-suit {
+  color: #ff9e8c;
+  text-shadow: 0 0 8px rgba(255, 120, 100, 0.3), 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.poker-table--hh .hh-board-row .hh-playing-card--diamond:not(.hh-playing-card--back) .hh-playing-card-suit {
+  color: #82c4ff;
+  text-shadow: 0 0 8px rgba(100, 170, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.poker-table--hh .hh-board-row .hh-playing-card--spade:not(.hh-playing-card--back) .hh-playing-card-suit {
+  color: #cfd8dc;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+.poker-table--hh .hh-board-row .hh-playing-card--club:not(.hh-playing-card--back) .hh-playing-card-suit {
+  color: #9adfad;
+  text-shadow: 0 0 8px rgba(100, 210, 130, 0.25), 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.poker-table--hh .hh-hole-cards .hh-playing-card-rank {
+  font-size: 1.4rem;
+  line-height: 0.92;
+  letter-spacing: -0.02em;
+}
+
+/* Garde des tailles confortables sur le board */
+.poker-table--hh .hh-playing-card-rank {
+  font-size: 1.365rem;
+}
+
+.poker-table--hh .hh-playing-card-suit {
+  font-size: 1.3rem;
+}
+
+/* Joueur à agir : au-dessus des autres sièges + halo sur le dock */
+.poker-table--hh .poker-table-seat.is-active {
+  z-index: 14;
+}
+
+.poker-table--hh .poker-table-seat.is-active .hh-seat-dock {
+  filter:
+    drop-shadow(0 0 6px rgba(255, 220, 140, 0.95))
+    drop-shadow(0 0 18px rgba(255, 185, 70, 0.55))
+    drop-shadow(0 0 32px rgba(255, 160, 40, 0.28));
+}
+
+.poker-table--hh .poker-table-seat.is-active .hh-seat-stack--meta {
+  border-color: rgba(255, 214, 130, 0.92);
+  background: linear-gradient(180deg, rgba(52, 58, 48, 0.98) 0%, rgba(28, 34, 28, 0.98) 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 220, 140, 0.35),
+    0 0 14px rgba(255, 200, 90, 0.45),
+    0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.poker-table--hh .poker-table-seat .hh-seat-dock {
+  transition: filter 0.18s ease;
+}
+
+/* Stack sous les cartes coupées : bandeau sombre comme sur la table de référence */
+.poker-table--hh .hh-seat-stack--meta {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: -0.38rem 0 0;
+  padding: 0.22rem 0.5rem 0.26rem;
+  max-width: 100%;
+  background: linear-gradient(180deg, rgba(38, 46, 54, 0.94) 0%, rgba(18, 24, 30, 0.96) 100%);
+  border: 1px solid rgba(88, 102, 112, 0.55);
+  border-radius: 9px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  line-height: 1.12;
+}
+
+.poker-table--hh .hh-seat-stack-value {
+  font-size: 0.74rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: rgba(236, 242, 238, 0.95);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+.poker-table--hh .hh-seat-stack--meta.hh-seat-stack--allin {
+  background: linear-gradient(180deg, rgba(88, 22, 32, 0.97) 0%, rgba(42, 8, 14, 0.99) 100%);
+  border-color: rgba(220, 72, 88, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(180, 40, 55, 0.35),
+    0 3px 14px rgba(0, 0, 0, 0.55);
+}
+
+.poker-table--hh .hh-seat-stack--allin .hh-seat-stack-value {
+  color: rgba(255, 175, 182, 0.98);
+  text-shadow:
+    0 0 10px rgba(220, 60, 80, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.65);
+  font-variant-numeric: normal;
+}
+
+.poker-table--hh .poker-table-seat.is-active .hh-seat-stack--meta.hh-seat-stack--allin {
+  border-color: rgba(255, 140, 150, 0.75);
+  box-shadow:
+    0 0 0 1px rgba(255, 200, 120, 0.35),
+    0 0 16px rgba(220, 70, 90, 0.45),
+    0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* Mises au milieu : un peu plus « jeton » pour contraster avec le stack */
+.poker-table--hh .poker-table-bet-label {
+  font-size: 0.84rem;
+  padding: 0.12rem 0.4rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.42);
+}
+
+.hh-playing-card {
+  width: 3.25rem;
+  height: 4.55rem;
+  border-radius: 8px;
+  background: linear-gradient(155deg, #fdfcfa 0%, #e6e4dc 42%, #d8d4c8 100%);
+  border: 1px solid rgba(35, 40, 45, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hh-playing-card-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  width: 100%;
+  height: 100%;
+  padding: 0.13rem;
+}
+
+.hh-playing-card-rank {
+  font-size: 1.885rem;
+  font-weight: 800;
+  line-height: 0.95;
+}
+
+.hh-playing-card-suit {
+  font-size: 1.755rem;
+  line-height: 0.82;
+}
+
+.hh-playing-card--heart .hh-playing-card-rank,
+.hh-playing-card--heart .hh-playing-card-suit {
+  color: #b71c1c;
+}
+
+.hh-playing-card--spade .hh-playing-card-rank,
+.hh-playing-card--spade .hh-playing-card-suit {
+  color: #1a1f24;
+}
+
+.hh-playing-card--diamond .hh-playing-card-rank,
+.hh-playing-card--diamond .hh-playing-card-suit {
+  color: #1565c0;
+}
+
+.hh-playing-card--club .hh-playing-card-rank,
+.hh-playing-card--club .hh-playing-card-suit {
+  color: #2e7d32;
+}
+
+.hh-playing-card--back {
+  padding: 0.29rem;
+  overflow: hidden;
+  background: linear-gradient(152deg, #16101f 0%, #0a121c 42%, #0c0a14 100%);
+  border: 1px solid rgba(197, 160, 89, 0.35);
+}
+
+.hh-playing-card--back.hh-playing-card--tilt-l {
+  transform: rotate(-5deg);
+}
+
+.hh-playing-card--back.hh-playing-card--tilt-r {
+  transform: rotate(5deg);
+}
+
+.hh-card-back-logo {
+  display: block;
+  width: 115%;
+  height: 115%;
+  object-fit: contain;
+  object-position: center;
+  pointer-events: none;
+  user-select: none;
+}
+
+.hh-modal[hidden] {
+  display: none !important;
+}
+
+.hh-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.hh-modal-dialog {
+  width: min(640px, 100%);
+  max-height: min(88vh, 900px);
+  overflow: auto;
+  background: var(--hh-bg-elev);
+  border: 1px solid var(--hh-border);
+  border-radius: var(--hh-radius);
+  padding: 1rem 1.1rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+}
+
+.hh-modal-dialog--wide {
+  width: min(920px, 100%);
+}
+
+.hh-hole-card-slot {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.hh-hole-card-slot > .hh-label {
+  margin-bottom: 0.25rem;
+}
+
+.hh-hole-card-pair-btn {
+  display: block;
+  width: 100%;
+  max-width: 7.5rem;
+  margin: 0 auto;
+  padding: 0.2rem 0.1rem 0.3rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--hh-radius);
+  color: inherit;
+  font: inherit;
+}
+
+.hh-hole-card-pair-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.hh-hole-card-pair-btn:focus-visible {
+  outline: 2px solid rgba(201, 162, 39, 0.55);
+  outline-offset: 2px;
+}
+
+.hh-hole-card-pair-visual {
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* Panneau Cartes : rectos lisibles (rang + enseigne), pas la coupe « trou » de la table */
+.hh-hole-card-pair-visual.poker-table--hh .hh-hole-cards > .hh-playing-card:not(.hh-playing-card--back) .hh-playing-card-inner {
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 0.22rem 0.16rem;
+  box-sizing: border-box;
+}
+
+.hh-hole-card-pair-visual.poker-table--hh .hh-hole-cards .hh-playing-card-suit {
+  display: inline;
+}
+
+.hh-card-matrix-wrap {
+  overflow-x: auto;
+  margin-top: 0.35rem;
+}
+
+.hh-card-matrix {
+  display: grid;
+  grid-template-columns: 2rem repeat(13, minmax(1.6rem, 1fr));
+  gap: 4px;
+  align-items: stretch;
+  min-width: min(100%, 26rem);
+}
+
+.hh-card-matrix-head {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-align: center;
+  color: var(--hh-muted);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 2px;
+}
+
+.hh-card-matrix-rowhead {
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hh-muted);
+}
+
+.hh-card-matrix-cell {
+  position: relative;
+  min-height: 2.45rem;
+  padding: 2px 3px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-weight: 800;
+  line-height: 1;
+  border: 1px solid rgba(60, 70, 80, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.hh-card-matrix-cell.hh-playing-card--heart {
+  background:
+    linear-gradient(165deg, rgba(255, 120, 100, 0.14) 0%, transparent 42%),
+    linear-gradient(152deg, #2a1418 0%, #1a0a0c 55%, #0d0608 100%);
+  border-color: rgba(180, 60, 70, 0.45);
+}
+
+.hh-card-matrix-cell.hh-playing-card--diamond {
+  background:
+    linear-gradient(165deg, rgba(100, 180, 255, 0.16) 0%, transparent 42%),
+    linear-gradient(152deg, #0f1a28 0%, #0a121c 55%, #060a10 100%);
+  border-color: rgba(50, 100, 160, 0.5);
+}
+
+.hh-card-matrix-cell.hh-playing-card--spade {
+  background:
+    linear-gradient(165deg, rgba(160, 175, 195, 0.12) 0%, transparent 45%),
+    linear-gradient(152deg, #1c2228 0%, #12161a 55%, #080a0c 100%);
+  border-color: rgba(70, 82, 96, 0.55);
+}
+
+.hh-card-matrix-cell.hh-playing-card--club {
+  background:
+    linear-gradient(165deg, rgba(100, 200, 130, 0.14) 0%, transparent 42%),
+    linear-gradient(152deg, #0f1e14 0%, #0a1410 55%, #050a08 100%);
+  border-color: rgba(40, 110, 65, 0.5);
+}
+
+.hh-card-matrix-cell-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.06rem;
+  pointer-events: none;
+}
+
+.hh-card-matrix-rank {
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+
+.hh-card-matrix-suit {
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 0.85;
+}
+
+.hh-card-matrix-cell.is-selected {
+  outline: 2px solid rgba(201, 162, 39, 0.95);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2);
+}
+
+.hh-card-matrix-cell.is-blocked,
+.hh-card-matrix-cell:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+}
+
+.hh-card-matrix-order {
+  position: absolute;
+  top: 1px;
+  right: 2px;
+  font-size: 0.55rem;
+  font-weight: 800;
+  color: rgba(201, 162, 39, 0.95);
+}
+
+.hh-card-matrix-cell.hh-playing-card--heart .hh-card-matrix-rank {
+  color: #ffc9c2;
+  text-shadow: 0 0 8px rgba(255, 100, 90, 0.3), 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+.hh-card-matrix-cell.hh-playing-card--heart .hh-card-matrix-suit {
+  color: #ff9e8c;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+}
+
+.hh-card-matrix-cell.hh-playing-card--diamond .hh-card-matrix-rank {
+  color: #b8dcff;
+  text-shadow: 0 0 8px rgba(80, 160, 255, 0.32), 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+.hh-card-matrix-cell.hh-playing-card--diamond .hh-card-matrix-suit {
+  color: #82c4ff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+}
+
+.hh-card-matrix-cell.hh-playing-card--spade .hh-card-matrix-rank {
+  color: #e2e8ef;
+  text-shadow: 0 0 6px rgba(180, 195, 210, 0.18), 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+.hh-card-matrix-cell.hh-playing-card--spade .hh-card-matrix-suit {
+  color: #cfd8dc;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+.hh-card-matrix-cell.hh-playing-card--club .hh-card-matrix-rank {
+  color: #c8f0d0;
+  text-shadow: 0 0 8px rgba(100, 220, 140, 0.25), 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+.hh-card-matrix-cell.hh-playing-card--club .hh-card-matrix-suit {
+  color: #9adfad;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+}
+
+.hh-card-picker-selection {
+  margin-top: 0.75rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.22);
+  font-family: ui-monospace, monospace, sans-serif;
+  font-size: 0.82rem;
+  color: rgba(220, 232, 228, 0.92);
+}
+
+.hh-card-picker-actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.hh-modal-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.hh-table-list {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.hh-table-list th,
+.hh-table-list td {
+  border-bottom: 1px solid rgba(197, 160, 89, 0.15);
+  padding: 0.45rem 0.35rem;
+  text-align: left;
+}
+
+.hh-tag {
+  display: inline-block;
+  margin: 0.1rem 0.15rem 0 0;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  background: rgba(30, 86, 49, 0.45);
+  border: 1px solid rgba(197, 160, 89, 0.25);
+}
+
+.hh-raise-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+/* display:flex ci-dessus gagnait sur l’attribut HTML hidden — sans ceci la ligne restait visible */
+.hh-raise-row[hidden] {
+  display: none !important;
+}
+
+.hh-raise-row input {
+  width: 4.25rem;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.hh-hand-finished-note {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--hh-gold);
+  max-width: 42rem;
+  line-height: 1.35;
+}
+
+.hh-cards-hint {
+  margin: 0.15rem 0 0.5rem;
+  font-size: 0.78rem;
+  color: var(--hh-muted);
+  max-width: 48rem;
+  line-height: 1.35;
+}
+
+#view-hand-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.hh-view-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.hh-view-title-line {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--hh-text);
+}
+
+.hh-view-street-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.hh-btn--street {
+  padding: 0.28rem 0.55rem;
+  font-size: 0.76rem;
+}
+
+.hh-view-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  margin: 0.5rem 0;
+}
+
+@media (max-width: 520px) {
+  .hh-title {
+    font-size: 1.1rem;
+  }
+}

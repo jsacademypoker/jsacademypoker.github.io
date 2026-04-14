@@ -1,0 +1,29 @@
+# Dépôt racine = dossier Poker : publie le sous-dossier JSAcademy sur gh-pages.
+name: Deploy JSAcademy to GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Inject Supabase config
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          printf '%s\n' "window.HH_SUPABASE = { url: '${SUPABASE_URL}', anonKey: '${SUPABASE_ANON_KEY}' };" > JSAcademy/js/config.js
+
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./JSAcademy
+          force_orphan: true
