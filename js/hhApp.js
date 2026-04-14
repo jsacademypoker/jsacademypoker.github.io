@@ -28,6 +28,8 @@ const state = {
   viewHandCache: new Map(),
   /** Création : après validation des paramètres, le bloc se replie tant qu’une main (draft) existe */
   setupCollapsed: false,
+  /** Tags distincts déjà vus (liste + fetch `hands.tags`) pour la liste déroulante en création */
+  knownTags: [],
 };
 
 const HH_ICON_PLAY =
@@ -1083,6 +1085,113 @@ function onSeatClickCreate(seat) {
   renderCreateUi();
 }
 
+function mergeKnownTagsFromListRows() {
+  const set = new Set(state.knownTags || []);
+  (state.listRows || []).forEach((h) => {
+    (h.tags || []).forEach((t) => {
+      const s = String(t).trim();
+      if (s) set.add(s);
+    });
+  });
+  state.knownTags = Array.from(set).sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+}
+
+async function fetchKnownTagsFromDb() {
+  const { url, anonKey } = cfg();
+  if (!url || !anonKey) return;
+  try {
+    if (!state.sb) state.sb = hhCreateClient(url, anonKey);
+    const { data, error } = await state.sb.from('hands').select('tags');
+    if (error) return;
+    const set = new Set(state.knownTags || []);
+    (data || []).forEach((row) => {
+      (row.tags || []).forEach((t) => {
+        const s = String(t).trim();
+        if (s) set.add(s);
+      });
+    });
+    state.knownTags = Array.from(set).sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+  } catch (_) {
+    /* réseau / parse */
+  }
+}
+
+function renderHandTagsBlock() {
+  const sel = $('hand-tag-select');
+  const chips = $('hand-tags-chips');
+  if (!sel || !chips || !state.draft) return;
+  const current = [];
+  const seen = new Set();
+  for (const x of state.draft.tags || []) {
+    const s = String(x).trim();
+    if (!s) continue;
+    const k = s.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    current.push(s);
+  }
+  state.draft.tags = current;
+
+  sel.innerHTML = '';
+  const ph = document.createElement('option');
+  ph.value = '';
+  ph.textContent = '— Tag existant —';
+  sel.appendChild(ph);
+  const curLower = new Set(current.map((t) => t.toLowerCase()));
+  for (const t of state.knownTags || []) {
+    if (curLower.has(String(t).toLowerCase())) continue;
+    const o = document.createElement('option');
+    o.value = t;
+    o.textContent = t;
+    sel.appendChild(o);
+  }
+
+  chips.innerHTML = '';
+  for (let i = 0; i < current.length; i += 1) {
+    const t = current[i];
+    const wrap = document.createElement('span');
+    wrap.className = 'hh-tag hh-tag--draft';
+    wrap.appendChild(document.createTextNode(t));
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'hh-tag-remove';
+    btn.dataset.tagIndex = String(i);
+    btn.setAttribute('aria-label', 'Retirer le tag ' + t);
+    btn.textContent = '×';
+    wrap.appendChild(btn);
+    chips.appendChild(wrap);
+  }
+}
+
+function addDraftTag(raw) {
+  if (!state.draft) return false;
+  const t = String(raw || '').trim();
+  if (!t) return false;
+  const tags = (state.draft.tags || []).slice();
+  if (tags.some((x) => String(x).toLowerCase() === t.toLowerCase())) return false;
+  state.draft.tags = tags.concat([t]);
+  const kl = (state.knownTags || []).map((x) => String(x).toLowerCase());
+  if (!kl.includes(t.toLowerCase())) {
+    state.knownTags = (state.knownTags || []).concat([t]).sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+  }
+  return true;
+}
+
+function normalizeDraftTags() {
+  if (!state.draft) return;
+  const seen = new Set();
+  const out = [];
+  for (const t of state.draft.tags || []) {
+    const s = String(t).trim();
+    if (!s) continue;
+    const k = s.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(s);
+  }
+  state.draft.tags = out;
+}
+
 function renderCreateUi() {
   if (!state.draft) {
     if ($('create-editor')) $('create-editor').hidden = true;
@@ -1090,7 +1199,7 @@ function renderCreateUi() {
   }
   $('create-editor').hidden = false;
   $('hand-title').value = state.draft.title || '';
-  $('hand-tags').value = (state.draft.tags || []).join(', ');
+  renderHandTagsBlock();
   $('create-hand-id').textContent = state.draft.id ? 'ID : ' + state.draft.id : 'Nouvelle main (non enregistrée)';
   const ac = totalActions(state.draft.timeline);
   const st = HE().computeHandState(state.draft, ac);
@@ -1123,6 +1232,9 @@ function setMode(mode) {
     if (!state.draft) state.setupCollapsed = false;
     if (!state.draft || !state.setupCollapsed) populateSetupFormFields();
     updateCreateSetupPanelDom();
+    void fetchKnownTagsFromDb().then(() => {
+      if (state.mode === 'create' && state.draft) renderHandTagsBlock();
+    });
   }
   if (mode === 'list') refreshList();
   if (mode === 'view') {
@@ -1148,7 +1260,9 @@ async function refreshList() {
     return;
   }
   state.listRows = data || [];
+  mergeKnownTagsFromListRows();
   renderListTable();
+  if (state.mode === 'create' && state.draft) renderHandTagsBlock();
 }
 
 function renderListTable() {
@@ -1291,10 +1405,7 @@ async function saveHand() {
     return;
   }
   state.draft.title = $('hand-title').value.trim();
-  state.draft.tags = $('hand-tags')
-    .value.split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
+  normalizeDraftTags();
   if (!state.sb) state.sb = hhCreateClient(url, anonKey);
   const row = {
     title: state.draft.title,
@@ -1324,6 +1435,13 @@ async function saveHand() {
       setMsg('Main enregistrée.', 'ok');
     }
     $('create-hand-id').textContent = 'ID : ' + state.draft.id;
+    const tagSet = new Set(state.knownTags || []);
+    (state.draft.tags || []).forEach((t) => {
+      const s = String(t).trim();
+      if (s) tagSet.add(s);
+    });
+    state.knownTags = Array.from(tagSet).sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+    if (state.mode === 'create') renderHandTagsBlock();
   } catch (e) {
     setMsg(e.message || String(e), 'err');
   } finally {
@@ -1532,6 +1650,45 @@ function wireEvents() {
   $('btn-save-hand').addEventListener('click', () => {
     void saveHand();
   });
+  const createEd = $('create-editor');
+  if (createEd) {
+    createEd.addEventListener('click', (ev) => {
+      const rm = ev.target.closest('.hh-tag-remove');
+      if (!rm || !state.draft) return;
+      const idx = Number(rm.dataset.tagIndex);
+      if (!Number.isFinite(idx) || idx < 0) return;
+      const tags = (state.draft.tags || []).slice();
+      if (idx >= tags.length) return;
+      tags.splice(idx, 1);
+      state.draft.tags = tags;
+      renderHandTagsBlock();
+    });
+  }
+  const selTagPick = $('hand-tag-select');
+  if (selTagPick) {
+    selTagPick.addEventListener('change', () => {
+      if (!state.draft) return;
+      const v = (selTagPick.value || '').trim();
+      if (!v) return;
+      addDraftTag(v);
+      selTagPick.value = '';
+      renderHandTagsBlock();
+    });
+  }
+  const btnTagNew = $('btn-hand-tag-new');
+  const inpTagNew = $('hand-tag-new');
+  if (btnTagNew && inpTagNew) {
+    btnTagNew.addEventListener('click', () => {
+      if (!state.draft) return;
+      if (addDraftTag(inpTagNew.value)) inpTagNew.value = '';
+      renderHandTagsBlock();
+    });
+    inpTagNew.addEventListener('keydown', (ev) => {
+      if (ev.key !== 'Enter') return;
+      ev.preventDefault();
+      btnTagNew.click();
+    });
+  }
   $('btn-raise-ok').addEventListener('click', () => onRaiseOk());
   $('btn-round-end').addEventListener('click', () => pushRoundEnd());
   $('btn-board').addEventListener('click', () => openBoardModal());

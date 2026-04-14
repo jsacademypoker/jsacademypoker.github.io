@@ -183,6 +183,113 @@ body {
   align-items: center;
 }
 
+.hh-create-editor-toolbar {
+  align-items: flex-start;
+}
+
+.hh-tags-block {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+  min-width: min(100%, 22rem);
+  max-width: 100%;
+}
+
+.hh-tags-block-title {
+  margin: 0;
+  flex-shrink: 0;
+  line-height: 1.2;
+  align-self: center;
+}
+
+.hh-tags-block > .hh-tags-block-title {
+  margin-bottom: 0;
+}
+
+.hh-tags-stack {
+  display: flex;
+  flex-direction: row;
+  gap: 0.35rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.hh-tags-pick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.hh-tags-new-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 0.3rem;
+  align-items: center;
+  width: 100%;
+  max-width: 14rem;
+}
+
+.hh-tags-pick-row .hh-select {
+  min-width: 12rem;
+  max-width: min(100%, 22rem);
+}
+
+.hh-input--tag-new {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 4rem;
+}
+
+.hh-btn--tag-add {
+  flex: 0 0 auto;
+  padding: 0.32rem 0.42rem;
+  min-width: 2.1rem;
+  font-size: 1.15rem;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.hh-btn-icon--plus {
+  display: block;
+  line-height: 1;
+}
+
+.hh-tags-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+  min-height: 1.5rem;
+}
+
+.hh-tag--draft {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.12rem 0.35rem 0.12rem 0.45rem;
+}
+
+.hh-tag-remove {
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.15rem;
+  opacity: 0.75;
+  border-radius: 4px;
+}
+
+.hh-tag-remove:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.2);
+}
+
 .hh-btn {
   cursor: pointer;
   border-radius: 8px;

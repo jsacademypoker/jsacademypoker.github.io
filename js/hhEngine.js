@@ -88,6 +88,19 @@
     return start;
   }
 
+  /**
+   * Siège du premier joueur à parler préflop.
+   * Si `first_to_act` est absent (ex. JSON `null`), ne pas utiliser `Number(null) === 0` (BTN) : prendre le défaut UTG.
+   */
+  function resolveFirstToActPreflop(hand, n) {
+    const nn = clampN(n);
+    const ftaRaw = hand.first_to_act;
+    if (ftaRaw != null && Number.isFinite(Number(ftaRaw))) {
+      return Math.max(0, Math.min(nn - 1, Math.floor(Number(ftaRaw))));
+    }
+    return TP().defaultFirstToActIndex(nn);
+  }
+
   function replayOptsForStreet(street, hand) {
     const sb = Number(hand.small_blind_bb) || 0.5;
     const bb = Number(hand.big_blind_bb) || 1;
@@ -120,9 +133,7 @@
   function computeHandState(hand, actionCursor) {
     const RNk = RN();
     const n = clampN(hand.player_count);
-    const firstPreflop = Number.isFinite(Number(hand.first_to_act))
-      ? Math.max(0, Math.min(n - 1, Math.floor(Number(hand.first_to_act))))
-      : TP().defaultFirstToActIndex(n);
+    const firstPreflop = resolveFirstToActPreflop(hand, n);
     const sbBb = Math.max(1e-9, Number(hand.small_blind_bb) || 0.5);
     const bbBb = Math.max(1e-9, Number(hand.big_blind_bb) || 1);
     const dead = Math.max(0, Number(hand.dead_money_bb) || 0);
@@ -225,8 +236,13 @@
       carryFolded,
       carryAllIn
     );
+    const canCloseRoundNow =
+      !isHandFinished &&
+      street !== 'SHOWDOWN' &&
+      canBettingRoundClose(n, streetActions, firstToActStreet, street, hand, replay);
+    /** Tour clos : plus d’action (Check/Call) — sinon le siège suivant recevrait un Check alors que la rue est finie. */
     const legal =
-      isHandFinished || street === 'SHOWDOWN'
+      isHandFinished || street === 'SHOWDOWN' || canCloseRoundNow
         ? []
         : computeLegalActions({
             n,
@@ -259,10 +275,7 @@
       activePlayerCount,
       isHandFinished,
       totalActions: totalActionCount(timeline),
-      canCloseRound:
-        isHandFinished || street === 'SHOWDOWN'
-          ? false
-          : canBettingRoundClose(n, streetActions, firstToActStreet, street, hand, replay),
+      canCloseRound: canCloseRoundNow,
     };
   }
 
@@ -307,12 +320,19 @@
     const path = streetActions || [];
     const hadRaise = path.some((lbl) => RNk.isRaiseLikeAction(lbl));
     /**
-     * Sans relance : postflop checks (orbite complète), ou préflop limp jusqu’à la BB (option check/raise).
-     * Sinon tout le monde est déjà à hauteur de la mise max alors que la BB n’a pas encore parlé.
+     * Sans relance : postflop — orbite jusqu’à revenir au premier intervenant.
+     * Préflop sans relance — tout le monde peut être à la hauteur de la BB alors que c’est encore à elle de
+     * check/raise : on exige que la **dernière** action ait été prise **par la BB** (siège actif avant ce coup).
      */
     if (!hadRaise && alive.length >= 2) {
       if (path.length === 0) return false;
-      if (st.activeSeat !== firstToAct) return false;
+      if (street === 'PREFLOP') {
+        const bbSeat = TP().blindSeatIndices(n).bb;
+        const beforeLast = RNk.replayNavStateStreet(n, path.slice(0, -1), firstToAct, opts);
+        if (beforeLast.activeSeat !== bbSeat) return false;
+      } else if (st.activeSeat !== firstToAct) {
+        return false;
+      }
     }
     const mc = st.maxCommit;
     for (const i of alive) {
@@ -391,9 +411,7 @@
   function globalNavCrumbs(hand, actionCursor) {
     const RNk = RN();
     const n = clampN(hand.player_count);
-    const firstPreflop = Number.isFinite(Number(hand.first_to_act))
-      ? Math.max(0, Math.min(n - 1, Math.floor(Number(hand.first_to_act))))
-      : TP().defaultFirstToActIndex(n);
+    const firstPreflop = resolveFirstToActPreflop(hand, n);
     const sbBb = Math.max(1e-9, Number(hand.small_blind_bb) || 0.5);
     const bbBb = Math.max(1e-9, Number(hand.big_blind_bb) || 1);
     const dead = Math.max(0, Number(hand.dead_money_bb) || 0);

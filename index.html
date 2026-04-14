@@ -79,21 +79,30 @@
               </div>
             </div>
             <div class="hh-panel-block" id="create-editor" hidden>
-              <div class="hh-toolbar">
+              <div class="hh-toolbar hh-create-editor-toolbar">
                 <label class="hh-label" style="display: inline-flex; align-items: center; gap: 0.35rem; max-width: none">
                   Titre
                   <input type="text" class="hh-input" id="hand-title" style="max-width: 280px" />
                 </label>
-                <label class="hh-label" style="display: inline-flex; align-items: center; gap: 0.35rem; max-width: none">
-                  Tags (virgule)
-                  <input type="text" class="hh-input" id="hand-tags" style="max-width: 280px" placeholder="3bet, SBvBB" />
-                </label>
+                <div class="hh-tags-block">
+                  <span class="hh-label hh-tags-block-title">Tags</span>
+                  <div class="hh-tags-stack">
+                    <div class="hh-tags-pick-row">
+                      <select id="hand-tag-select" class="hh-select" aria-label="Choisir un tag existant">
+                        <option value="">— Tags existants —</option>
+                      </select>
+                    </div>
+                    <div class="hh-tags-new-row">
+                      <input type="text" class="hh-input hh-input--tag-new" id="hand-tag-new" maxlength="48" placeholder="Nouveau tag" />
+                      <button type="button" class="hh-btn hh-btn--icon hh-btn--tag-add" id="btn-hand-tag-new" aria-label="Créer le tag">
+                        <span class="hh-btn-icon hh-btn-icon--plus" aria-hidden="true">+</span>
+                      </button>
+                    </div>
+                    <div id="hand-tags-chips" class="hh-tags-chips" aria-live="polite"></div>
+                  </div>
+                </div>
               </div>
-              <p class="hh-label" style="margin-top: 0.65rem">Cartes (aucun doublon)</p>
-              <p class="hh-cards-hint">
-                Cliquez sur les deux cartes sous chaque position pour choisir la main. Sur la table : dos tant que la paire n’est pas
-                complète ici ; faces visibles une fois les deux cartes choisies.
-              </p>
+              <p class="hh-label" style="margin-top: 0.65rem">Cartes</p>
               <div id="hole-card-grid" class="hh-grid"></div>
               <div class="hh-breadcrumb" id="breadcrumb"></div>
               <div class="hh-action-bar-wrap">
