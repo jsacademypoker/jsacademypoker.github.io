@@ -30,7 +30,21 @@ const state = {
   setupCollapsed: false,
   /** Tags distincts déjà vus (liste + fetch `hands.tags`) pour la liste déroulante en création */
   knownTags: [],
+  /** Dossiers HH (table hh_folders) */
+  folderRows: [],
+  /** Dossier cible (création, + Dossier, suppression) ; null = racine / « Non classées » */
+  listTargetFolderId: null,
+  listExpandedFolderIds: new Set(),
+  /** Prochaine main créée via « Créer une main » depuis la liste : classement dans ce dossier */
+  assignFolderFromListToNextDraft: false,
+  folderForNextNewDraft: null,
 };
+
+/** Clé d’expansion pour la section « Non classées » dans listExpandedFolderIds */
+const LIST_UC_EXPAND_KEY = '__hh_uc__';
+
+/** Libellé affiché pour les mains sans dossier (non persisté en base). */
+const LIST_UC_LABEL = 'Non classées';
 
 const HH_ICON_PLAY =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>';
@@ -38,6 +52,10 @@ const HH_ICON_EDIT =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
 const HH_ICON_DELETE =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+const HH_ICON_NEW_FOLDER =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M20 6h-8l-2-2H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-1 8h-3v3h-2v-3h-3v-2h3V9h2v3h3v2z"/></svg>';
+const HH_ICON_NEW_HAND =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 14h-3v3h-2v-3h-3v-2h3V9h2v5h3v2zm-3-7V3.5L18.5 9H13z"/></svg>';
 
 function hhIconButton(classNames, svgHtml, ariaLabel) {
   const b = document.createElement('button');
@@ -73,6 +91,14 @@ function setMsg(text, kind) {
   if (kind === 'ok') el.classList.add('is-ok');
 }
 
+function setRaiseFeedback(text) {
+  const el = $('raise-feedback');
+  if (!el) return;
+  const t = (text || '').trim();
+  el.textContent = t;
+  el.hidden = !t;
+}
+
 function emptyDraft() {
   return {
     id: null,
@@ -88,6 +114,7 @@ function emptyDraft() {
     player_names: [],
     hole_cards: {},
     timeline: [],
+    folder_id: null,
   };
 }
 
@@ -165,6 +192,42 @@ function navigateBreadcrumbToActionIndex(clickedActionIndex) {
     pushRoundEnd();
   } else {
     renderCreateUi();
+  }
+}
+
+/** Création : une action en moins (équivalent à reculer d’un cran dans le fil d’Ariane). */
+function goBackOneCreateBreadcrumbStep() {
+  if (!state.draft) return;
+  const total = HE().totalActionCount(state.draft.timeline);
+  if (total <= 0) return;
+  state.draft.timeline = removeTrailingActions(state.draft.timeline, 1);
+  const ac = totalActions(state.draft.timeline);
+  const last = lastTimelineEvent(state.draft.timeline);
+  const st = HE().computeHandState(state.draft, ac);
+  if (last && last.kind === 'ACTION' && st.canCloseRound && !st.isHandFinished) {
+    pushRoundEnd();
+  } else {
+    renderCreateUi();
+  }
+}
+
+function openRaiseRowForLegal(raiseLeg) {
+  const raiseRow = $('raise-row');
+  if (!raiseRow || !raiseLeg) return;
+  setRaiseFeedback('');
+  raiseRow.hidden = false;
+  const inp = $('raise-amount');
+  if (inp) {
+    inp.min = String(raiseLeg.minTotal);
+    inp.max = String(raiseLeg.maxTotal);
+    inp.value = String(raiseLeg.minTotal);
+    inp.setAttribute(
+      'aria-label',
+      raiseLeg.openBet ? 'Montant total du bet en big blinds' : 'Montant total du raise en big blinds'
+    );
+    inp.placeholder = raiseLeg.openBet ? 'Bet (bb)' : 'Raise (bb)';
+    inp.focus();
+    inp.select();
   }
 }
 
@@ -291,6 +354,46 @@ function readSetupForm() {
     antes_bb,
     player_names,
   };
+}
+
+/** Barre création (visible sans éditeur) : évite de garder l’ID / titre d’une HH annulée. */
+function syncCreateToolbarForFreshSession() {
+  const idEl = $('create-hand-id');
+  if (idEl) idEl.textContent = 'Nouvelle main (non enregistrée)';
+  const titleEl = $('hand-title');
+  if (titleEl) titleEl.value = '';
+}
+
+function resetSetupFormToDefaults() {
+  const f = $('form-setup');
+  if (!f) return;
+  const d = emptyDraft();
+  const pcInp = f.querySelector('[name="player_count"]');
+  if (pcInp) pcInp.value = String(HE().clampN(d.player_count));
+  const sbIn = f.querySelector('[name="small_blind_bb"]');
+  const bbIn = f.querySelector('[name="big_blind_bb"]');
+  const dmIn = f.querySelector('[name="dead_money_bb"]');
+  if (sbIn) sbIn.value = String(d.small_blind_bb);
+  if (bbIn) bbIn.value = String(d.big_blind_bb);
+  if (dmIn) dmIn.value = String(d.dead_money_bb);
+  const n = HE().clampN(d.player_count);
+  fillFirstActSelect(n);
+  renderSetupGrids(n);
+}
+
+function cancelCreateHand() {
+  if (state.mode !== 'create') return;
+  const hadDraft = !!state.draft;
+  state.assignFolderFromListToNextDraft = false;
+  closeCardPickerModal();
+  state.draft = null;
+  state.setupCollapsed = false;
+  if ($('create-editor')) $('create-editor').hidden = true;
+  syncCreateToolbarForFreshSession();
+  resetSetupFormToDefaults();
+  updateCreateSetupPanelDom();
+  setMode('list');
+  if (hadDraft) setMsg('Création annulée.', 'ok');
 }
 
 function populateSetupFormFields() {
@@ -677,6 +780,7 @@ function renderActionBar(stPre) {
   const bar = $('action-bar');
   const raiseRow = $('raise-row');
   if (!bar || !state.draft) return;
+  setRaiseFeedback('');
   bar.innerHTML = '';
   if (raiseRow) {
     raiseRow.hidden = true;
@@ -717,22 +821,7 @@ function renderActionBar(stPre) {
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = raiseLeg.openBet ? 'Bet…' : 'Raise…';
-    b.addEventListener('click', () => {
-      if (raiseRow) {
-        raiseRow.hidden = false;
-        const inp = $('raise-amount');
-        if (inp) {
-          inp.min = String(raiseLeg.minTotal);
-          inp.max = String(raiseLeg.maxTotal);
-          inp.value = String(raiseLeg.minTotal);
-          inp.setAttribute(
-            'aria-label',
-            raiseLeg.openBet ? 'Montant total du bet en big blinds' : 'Montant total du raise en big blinds'
-          );
-          inp.placeholder = raiseLeg.openBet ? 'Bet (bb)' : 'Raise (bb)';
-        }
-      }
-    });
+    b.addEventListener('click', () => openRaiseRowForLegal(raiseLeg));
     bar.appendChild(b);
     const allInBtn = document.createElement('button');
     allInBtn.type = 'button';
@@ -773,9 +862,10 @@ function onRaiseOk() {
   const r = st.legal.find((x) => x.type === 'raise');
   if (!r) return;
   if (!Number.isFinite(v) || v < r.minTotal - 1e-9 || v > r.maxTotal + 1e-9) {
-    setMsg(r.openBet ? 'Montant de bet invalide.' : 'Montant de raise invalide.', 'err');
+    setRaiseFeedback(r.openBet ? 'Montant de bet invalide.' : 'Montant de raise invalide.');
     return;
   }
+  setRaiseFeedback('');
   appendAction(HE().formatRaiseLabel(v, !!r.openBet));
   setMsg('', null);
 }
@@ -1233,10 +1323,12 @@ function normalizeDraftTags() {
 function renderCreateUi() {
   if (!state.draft) {
     if ($('create-editor')) $('create-editor').hidden = true;
+    syncCreateToolbarForFreshSession();
     return;
   }
   $('create-editor').hidden = false;
   $('hand-title').value = state.draft.title || '';
+  populateHandFolderSelect();
   renderHandTagsBlock();
   $('create-hand-id').textContent = state.draft.id ? 'ID : ' + state.draft.id : 'Nouvelle main (non enregistrée)';
   const ac = totalActions(state.draft.timeline);
@@ -1267,14 +1359,24 @@ function setMode(mode) {
   $('panel-view').hidden = mode !== 'view';
   setMsg('', null);
   if (mode === 'create') {
-    if (!state.draft) state.setupCollapsed = false;
+    if (!state.draft) {
+      state.setupCollapsed = false;
+      syncCreateToolbarForFreshSession();
+    }
     if (!state.draft || !state.setupCollapsed) populateSetupFormFields();
     updateCreateSetupPanelDom();
     void fetchKnownTagsFromDb().then(() => {
       if (state.mode === 'create' && state.draft) renderHandTagsBlock();
     });
+    if (state.draft) {
+      renderCreateUi();
+      void refreshList();
+    }
   }
-  if (mode === 'list') refreshList();
+  if (mode === 'list') {
+    if (!state.draft) state.assignFolderFromListToNextDraft = false;
+    refreshList();
+  }
   if (mode === 'view') {
     if (state.viewQueue.length) loadViewHand();
     else {
@@ -1292,96 +1394,615 @@ async function refreshList() {
     return;
   }
   state.sb = hhCreateClient(url, anonKey);
-  const { data, error } = await state.sb.from('hands').select('*').order('created_at', { ascending: false });
+  const [fr, hr] = await Promise.all([
+    state.sb.from('hh_folders').select('*').order('name'),
+    state.sb.from('hands').select('*').order('created_at', { ascending: false }),
+  ]);
+  if (fr.error) {
+    setMsg(fr.error.message, 'err');
+    return;
+  }
+  if (hr.error) {
+    setMsg(hr.error.message, 'err');
+    return;
+  }
+  state.folderRows = fr.data || [];
+  state.listRows = hr.data || [];
+  mergeKnownTagsFromListRows();
+  renderUnifiedList();
+  if (state.mode === 'create' && state.draft) renderCreateUi();
+}
+
+function syncListFolderToolbar() {
+  const btn = $('btn-folder-delete');
+  if (!btn) return;
+  btn.hidden = state.listTargetFolderId == null;
+}
+
+function sortHandsByCreatedDesc(arr) {
+  return arr.slice().sort((a, b) => {
+    const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return tb - ta;
+  });
+}
+
+function parseListTagFilter() {
+  const filterStr = ($('list-tag-filter') && $('list-tag-filter').value) || '';
+  return filterStr
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function handMatchesListTags(h, tagsF) {
+  if (!tagsF.length) return true;
+  const ht = h.tags || [];
+  return tagsF.some((t) => ht.includes(t));
+}
+
+function wireListDragCleanupOnce() {
+  if (window.__hhListDragCleanupWired) return;
+  window.__hhListDragCleanupWired = true;
+  document.addEventListener('dragend', () => {
+    document.querySelectorAll('.hh-drop-target').forEach((el) => el.classList.remove('hh-drop-target'));
+  });
+}
+
+function bindFolderRowDropTarget(tr, folderId) {
+  tr.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    tr.classList.add('hh-drop-target');
+  });
+  tr.addEventListener('dragleave', (e) => {
+    if (!tr.contains(e.relatedTarget)) tr.classList.remove('hh-drop-target');
+  });
+  tr.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    tr.classList.remove('hh-drop-target');
+    const hid = e.dataTransfer.getData('text/hh-hand-id') || e.dataTransfer.getData('text/plain');
+    if (!hid) return;
+    const target = folderId;
+    const h = state.listRows.find((x) => String(x.id) === String(hid));
+    if (!h) return;
+    const cur = h.folder_id != null && h.folder_id !== '' ? String(h.folder_id) : '';
+    const want = target != null && target !== '' ? String(target) : '';
+    if (cur === want) return;
+    await setHandFolder(hid, target);
+  });
+}
+
+/** Indentation gauche (rem) alignée sur les lignes dossier (`depth` = profondeur dans l’arbre). */
+function hhListFolderIndentRem(depth) {
+  return 0.35 + depth * 0.85;
+}
+
+function appendHandRowToList(tb, h, tagsF, folderDepth = 0) {
+  if (!handMatchesListTags(h, tagsF)) return;
+  const tr = document.createElement('tr');
+  tr.className = 'hh-hands-row hh-hand-row--draggable';
+  tr.draggable = true;
+  tr.dataset.handId = String(h.id);
+  tr.addEventListener('dragstart', (e) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/hh-hand-id', String(h.id));
+    e.dataTransfer.setData('text/plain', String(h.id));
+    tr.classList.add('hh-hand-row--dragging');
+  });
+  tr.addEventListener('dragend', () => tr.classList.remove('hh-hand-row--dragging'));
+  const td0 = document.createElement('td');
+  const cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.dataset.id = h.id;
+  td0.appendChild(cb);
+  tr.appendChild(td0);
+  const td1 = document.createElement('td');
+  td1.textContent = h.title || '(sans titre)';
+  tr.appendChild(td1);
+  const td2 = document.createElement('td');
+  td2.textContent = h.created_at ? new Date(h.created_at).toLocaleString('fr-FR') : '';
+  tr.appendChild(td2);
+  const td3 = document.createElement('td');
+  td3.textContent = String(h.player_count);
+  tr.appendChild(td3);
+  const td4 = document.createElement('td');
+  (h.tags || []).forEach((t) => {
+    const sp = document.createElement('span');
+    sp.className = 'hh-tag';
+    sp.textContent = t;
+    td4.appendChild(sp);
+  });
+  tr.appendChild(td4);
+  const td5 = document.createElement('td');
+  td5.className = 'hh-list-actions';
+  const b1 = hhIconButton('hh-btn hh-btn--icon', HH_ICON_PLAY, 'Replayer');
+  b1.addEventListener('click', () => {
+    state.viewQueue = [h.id];
+    state.viewHandIndex = 0;
+    state.viewActionCursor = 0;
+    setMode('view');
+    loadViewHand();
+  });
+  const b2 = hhIconButton('hh-btn hh-btn--icon', HH_ICON_EDIT, 'Éditer');
+  b2.addEventListener('click', () => {
+    loadHandIntoDraft(h);
+  });
+  td5.appendChild(b1);
+  td5.appendChild(b2);
+  const b3 = hhIconButton('hh-btn hh-btn--icon hh-btn--danger', HH_ICON_DELETE, 'Supprimer');
+  b3.addEventListener('click', async () => {
+    if (!confirm('Supprimer cette main ?')) return;
+    const { error } = await state.sb.from('hands').delete().eq('id', h.id);
+    if (error) setMsg(error.message, 'err');
+    else {
+      setMsg('Supprimé.', 'ok');
+      refreshList();
+    }
+  });
+  td5.appendChild(b3);
+  tr.appendChild(td5);
+  const indentRem = hhListFolderIndentRem(folderDepth) + 'rem';
+  [td0, td1, td2, td3, td4, td5].forEach((td) => {
+    td.style.paddingLeft = indentRem;
+  });
+  cb.addEventListener('change', () => {
+    tr.classList.toggle('is-selected', cb.checked);
+  });
+  tr.addEventListener('click', (e) => {
+    if (e.target.closest('button')) return;
+    if (e.target.closest('input[type="checkbox"]')) return;
+    cb.checked = !cb.checked;
+    tr.classList.toggle('is-selected', cb.checked);
+  });
+  tb.appendChild(tr);
+}
+
+function folderChildFolders(folderId) {
+  return state.folderRows.filter(
+    (f) => f.parent_id != null && String(f.parent_id) === String(folderId)
+  );
+}
+
+function handsInFolder(folderId) {
+  return state.listRows.filter((h) => {
+    const fid = h.folder_id != null && h.folder_id !== '' ? String(h.folder_id) : null;
+    return fid === String(folderId);
+  });
+}
+
+/** Options plates pour le sélecteur dossier en création (profondeur = indentation dans le libellé). */
+function buildCreateFolderOptionsFlat() {
+  const out = [{ value: '', label: LIST_UC_LABEL, depth: 0 }];
+  function walk(parentId, depth) {
+    const wantParent = parentId == null ? null : String(parentId);
+    const kids = state.folderRows.filter((f) => {
+      const pid = f.parent_id == null || f.parent_id === '' ? null : String(f.parent_id);
+      if (wantParent == null) return pid == null;
+      return pid === wantParent;
+    });
+    kids.sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+    kids.forEach((f) => {
+      const indent = depth > 0 ? '\u2007'.repeat(depth * 2) + '· ' : '';
+      out.push({ value: String(f.id), label: indent + f.name, depth });
+      walk(f.id, depth + 1);
+    });
+  }
+  walk(null, 0);
+  return out;
+}
+
+function populateHandFolderSelect() {
+  const sel = $('hand-folder-select');
+  if (!sel || !state.draft) return;
+  const cur =
+    state.draft.folder_id != null && state.draft.folder_id !== '' ? String(state.draft.folder_id) : '';
+  const opts = buildCreateFolderOptionsFlat();
+  const known = new Set(opts.map((o) => o.value));
+  sel.innerHTML = '';
+  opts.forEach((opt) => {
+    const o = document.createElement('option');
+    o.value = opt.value;
+    o.textContent = opt.label;
+    sel.appendChild(o);
+  });
+  if (cur && !known.has(cur)) {
+    const o = document.createElement('option');
+    o.value = cur;
+    o.textContent = '\u2007· (dossier introuvable)';
+    sel.appendChild(o);
+  }
+  sel.value = cur || '';
+}
+
+/** Dossier `rootId` et tous ses descendants (pour reclasser les mains avant suppression). */
+function collectFolderDescendantIds(rootId) {
+  const ids = [];
+  function walk(id) {
+    ids.push(id);
+    state.folderRows.forEach((f) => {
+      if (f.parent_id != null && String(f.parent_id) === String(id)) walk(f.id);
+    });
+  }
+  walk(rootId);
+  return ids;
+}
+
+function appendFolderBranch(tb, folder, depth, tagsF) {
+  const subfolders = folderChildFolders(folder.id);
+  subfolders.sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+  const handsHere = handsInFolder(folder.id);
+  const hasExpandable = subfolders.length > 0 || handsHere.length > 0;
+  const expanded = state.listExpandedFolderIds.has(folder.id);
+
+  const tr = document.createElement('tr');
+  tr.className = 'hh-list-folder-row';
+  if (state.listTargetFolderId != null && String(state.listTargetFolderId) === String(folder.id)) {
+    tr.classList.add('is-target-folder');
+  }
+  tr.dataset.dropFolderId = String(folder.id);
+  bindFolderRowDropTarget(tr, folder.id);
+
+  const td0 = document.createElement('td');
+  td0.colSpan = 6;
+  td0.className = 'hh-list-folder-cell';
+
+  const inner = document.createElement('div');
+  inner.className = 'hh-list-folder-inner';
+  inner.style.paddingLeft = hhListFolderIndentRem(depth) + 'rem';
+
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'hh-folder-toggle hh-folder-toggle--table';
+  toggle.textContent = hasExpandable ? (expanded ? '▼' : '▶') : '·';
+  toggle.disabled = !hasExpandable;
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!hasExpandable) return;
+    if (expanded) state.listExpandedFolderIds.delete(folder.id);
+    else state.listExpandedFolderIds.add(folder.id);
+    renderUnifiedList();
+  });
+
+  const titleWrap = document.createElement('div');
+  titleWrap.className = 'hh-list-folder-title-wrap';
+
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'hh-list-folder-name';
+  nameSpan.textContent = folder.name;
+  nameSpan.title = 'Cliquer pour renommer · Maj+clic : dossier cible (création, + Dossier)';
+
+  const renameBox = document.createElement('div');
+  renameBox.className = 'hh-list-folder-rename-box';
+  renameBox.hidden = true;
+
+  const sizer = document.createElement('span');
+  sizer.className = 'hh-list-folder-rename-sizer';
+  sizer.setAttribute('aria-hidden', 'true');
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.className = 'hh-list-folder-rename-input';
+  nameInput.setAttribute('aria-label', 'Nom du dossier');
+  nameInput.value = folder.name;
+
+  function syncRenameSizer() {
+    const raw = nameInput.value;
+    sizer.textContent = raw.length ? raw : '\u00a0';
+  }
+
+  renameBox.appendChild(sizer);
+  renameBox.appendChild(nameInput);
+
+  let escFromRename = false;
+
+  nameSpan.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (e.shiftKey) {
+      e.preventDefault();
+      state.listTargetFolderId = folder.id;
+      renderUnifiedList();
+      return;
+    }
+    nameSpan.hidden = true;
+    renameBox.hidden = false;
+    nameInput.value = folder.name;
+    syncRenameSizer();
+    nameInput.focus();
+    nameInput.select();
+  });
+
+  nameInput.addEventListener('input', () => syncRenameSizer());
+  nameInput.addEventListener('click', (e) => e.stopPropagation());
+
+  nameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      escFromRename = true;
+      renameBox.hidden = true;
+      nameSpan.hidden = false;
+      nameInput.value = folder.name;
+      nameInput.blur();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      nameInput.blur();
+    }
+  });
+
+  nameInput.addEventListener('blur', async () => {
+    if (escFromRename) {
+      escFromRename = false;
+      return;
+    }
+    if (renameBox.hidden) return;
+    const v = nameInput.value.trim();
+    renameBox.hidden = true;
+    nameSpan.hidden = false;
+    if (!v || v === folder.name) {
+      nameSpan.textContent = folder.name;
+      return;
+    }
+    const ok = await renameFolderInDb(folder.id, v);
+    if (!ok) nameSpan.textContent = folder.name;
+  });
+
+  titleWrap.appendChild(nameSpan);
+  titleWrap.appendChild(renameBox);
+
+  td0.addEventListener('click', (e) => {
+    if (!renameBox.hidden) return;
+    if (e.target.closest('.hh-list-folder-name')) return;
+    if (e.target.closest('.hh-list-folder-rename-box')) return;
+    if (e.target.closest('.hh-folder-toggle')) return;
+    if (e.target.closest('.hh-list-folder-actions')) return;
+    if (!hasExpandable) return;
+    if (expanded) state.listExpandedFolderIds.delete(folder.id);
+    else state.listExpandedFolderIds.add(folder.id);
+    renderUnifiedList();
+  });
+
+  const folderActions = document.createElement('div');
+  folderActions.className = 'hh-list-folder-actions';
+
+  const createHandBtn = hhIconButton(
+    'hh-btn hh-btn--icon hh-btn--small',
+    HH_ICON_NEW_HAND,
+    'Créer une main dans ce dossier'
+  );
+  createHandBtn.title = 'Créer une main dans ce dossier';
+  createHandBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    state.assignFolderFromListToNextDraft = true;
+    state.folderForNextNewDraft = folder.id;
+    setMode('create');
+  });
+
+  const subBtn = hhIconButton(
+    'hh-btn hh-btn--icon hh-btn--small',
+    HH_ICON_NEW_FOLDER,
+    'Créer un sous-dossier ici'
+  );
+  subBtn.title = 'Créer un sous-dossier ici';
+  subBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    state.listExpandedFolderIds.add(folder.id);
+    void createListFolderUnder(folder.id);
+  });
+
+  const delBtn = hhIconButton(
+    'hh-btn hh-btn--icon hh-btn--small hh-btn--danger',
+    HH_ICON_DELETE,
+    'Supprimer ce dossier'
+  );
+  delBtn.title = 'Supprimer ce dossier';
+  delBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    void deleteFolderById(folder.id);
+  });
+
+  folderActions.appendChild(createHandBtn);
+  folderActions.appendChild(subBtn);
+  folderActions.appendChild(delBtn);
+
+  inner.appendChild(toggle);
+  inner.appendChild(titleWrap);
+  inner.appendChild(folderActions);
+  td0.appendChild(inner);
+  tr.appendChild(td0);
+  tb.appendChild(tr);
+
+  if (!expanded) return;
+  sortHandsByCreatedDesc(handsHere).forEach((h) => appendHandRowToList(tb, h, tagsF, depth));
+  subfolders.forEach((c) => appendFolderBranch(tb, c, depth + 1, tagsF));
+}
+
+function renderUnifiedList() {
+  wireListDragCleanupOnce();
+  const tb = $('hands-tbody');
+  if (!tb) return;
+  tb.innerHTML = '';
+  const tagsF = parseListTagFilter();
+
+  const ucHandsAll = state.listRows.filter((h) => {
+    const fid = h.folder_id != null && h.folder_id !== '' ? String(h.folder_id) : null;
+    return fid == null;
+  });
+  const ucExpanded = state.listExpandedFolderIds.has(LIST_UC_EXPAND_KEY);
+  const ucHasExpandable = ucHandsAll.length > 0;
+
+  const trUc = document.createElement('tr');
+  trUc.className = 'hh-list-folder-row hh-list-uc-row';
+  if (state.listTargetFolderId == null) trUc.classList.add('is-target-folder');
+  trUc.dataset.dropFolderId = '';
+  bindFolderRowDropTarget(trUc, null);
+
+  const tdUc = document.createElement('td');
+  tdUc.colSpan = 6;
+  tdUc.className = 'hh-list-folder-cell';
+  const innerUc = document.createElement('div');
+  innerUc.className = 'hh-list-folder-inner';
+  innerUc.style.paddingLeft = hhListFolderIndentRem(0) + 'rem';
+
+  const toggleUc = document.createElement('button');
+  toggleUc.type = 'button';
+  toggleUc.className = 'hh-folder-toggle hh-folder-toggle--table';
+  toggleUc.textContent = ucHasExpandable ? (ucExpanded ? '▼' : '▶') : '·';
+  toggleUc.disabled = !ucHasExpandable;
+  toggleUc.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!ucHasExpandable) return;
+    if (ucExpanded) state.listExpandedFolderIds.delete(LIST_UC_EXPAND_KEY);
+    else state.listExpandedFolderIds.add(LIST_UC_EXPAND_KEY);
+    renderUnifiedList();
+  });
+
+  const titleWrapUc = document.createElement('div');
+  titleWrapUc.className = 'hh-list-folder-title-wrap';
+
+  const nameSpanUc = document.createElement('span');
+  nameSpanUc.className = 'hh-list-folder-name';
+  nameSpanUc.textContent = LIST_UC_LABEL;
+  nameSpanUc.title =
+    'Dossier cible : mains sans dossier (« Créer une main », + Dossier). Clic ou Maj+clic sur le libellé.';
+
+  nameSpanUc.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (e.shiftKey) e.preventDefault();
+    state.listTargetFolderId = null;
+    renderUnifiedList();
+  });
+
+  titleWrapUc.appendChild(nameSpanUc);
+
+  tdUc.addEventListener('click', (e) => {
+    if (e.target.closest('.hh-list-folder-name')) return;
+    if (e.target.closest('.hh-folder-toggle')) return;
+    if (e.target.closest('.hh-list-folder-actions')) return;
+    if (!ucHasExpandable) return;
+    if (ucExpanded) state.listExpandedFolderIds.delete(LIST_UC_EXPAND_KEY);
+    else state.listExpandedFolderIds.add(LIST_UC_EXPAND_KEY);
+    renderUnifiedList();
+  });
+  innerUc.appendChild(toggleUc);
+  innerUc.appendChild(titleWrapUc);
+  tdUc.appendChild(innerUc);
+  trUc.appendChild(tdUc);
+  tb.appendChild(trUc);
+
+  if (ucExpanded) {
+    sortHandsByCreatedDesc(ucHandsAll).forEach((h) => appendHandRowToList(tb, h, tagsF, 0));
+  }
+
+  const top = state.folderRows.filter((f) => !f.parent_id);
+  top.sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+  top.forEach((f) => appendFolderBranch(tb, f, 0, tagsF));
+
+  syncListFolderToolbar();
+}
+
+async function createListFolderUnder(fixedParent) {
+  if (!state.sb) return;
+  const name = String(window.prompt('Nom du dossier :', '') || '').trim();
+  if (!name) return;
+  const parent_id =
+    fixedParent === undefined
+      ? state.listTargetFolderId || null
+      : fixedParent != null && fixedParent !== ''
+        ? fixedParent
+        : null;
+  const { error } = await state.sb.from('hh_folders').insert({ name, parent_id });
   if (error) {
     setMsg(error.message, 'err');
     return;
   }
-  state.listRows = data || [];
-  mergeKnownTagsFromListRows();
-  renderListTable();
-  if (state.mode === 'create' && state.draft) renderHandTagsBlock();
+  if (parent_id) state.listExpandedFolderIds.add(parent_id);
+  setMsg('Dossier créé.', 'ok');
+  await refreshList();
 }
 
-function renderListTable() {
-  const tb = $('hands-tbody');
-  if (!tb) return;
-  tb.innerHTML = '';
-  const filterStr = ($('list-tag-filter') && $('list-tag-filter').value) || '';
-  const tagsF = filterStr
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const rows = state.listRows.filter((h) => {
-    if (!tagsF.length) return true;
-    const ht = h.tags || [];
-    return tagsF.some((t) => ht.includes(t));
-  });
-  rows.forEach((h) => {
-    const tr = document.createElement('tr');
-    const td0 = document.createElement('td');
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.dataset.id = h.id;
-    td0.appendChild(cb);
-    tr.appendChild(td0);
-    const td1 = document.createElement('td');
-    td1.textContent = h.title || '(sans titre)';
-    tr.appendChild(td1);
-    const td2 = document.createElement('td');
-    td2.textContent = h.created_at ? new Date(h.created_at).toLocaleString('fr-FR') : '';
-    tr.appendChild(td2);
-    const td3 = document.createElement('td');
-    td3.textContent = String(h.player_count);
-    tr.appendChild(td3);
-    const td4 = document.createElement('td');
-    (h.tags || []).forEach((t) => {
-      const sp = document.createElement('span');
-      sp.className = 'hh-tag';
-      sp.textContent = t;
-      td4.appendChild(sp);
-    });
-    tr.appendChild(td4);
-    const td5 = document.createElement('td');
-    td5.className = 'hh-list-actions';
-    const b1 = hhIconButton('hh-btn hh-btn--icon', HH_ICON_PLAY, 'Replayer');
-    b1.addEventListener('click', () => {
-      state.viewQueue = [h.id];
-      state.viewHandIndex = 0;
-      state.viewActionCursor = 0;
-      setMode('view');
-      loadViewHand();
-    });
-    const b2 = hhIconButton('hh-btn hh-btn--icon', HH_ICON_EDIT, 'Éditer');
-    b2.addEventListener('click', () => {
-      loadHandIntoDraft(h);
-    });
-    td5.appendChild(b1);
-    td5.appendChild(b2);
-    const b3 = hhIconButton('hh-btn hh-btn--icon hh-btn--danger', HH_ICON_DELETE, 'Supprimer');
-    b3.addEventListener('click', async () => {
-      if (!confirm('Supprimer cette main ?')) return;
-      const { error } = await state.sb.from('hands').delete().eq('id', h.id);
-      if (error) setMsg(error.message, 'err');
-      else {
-        setMsg('Supprimé.', 'ok');
-        refreshList();
-      }
-    });
-    td5.appendChild(b3);
-    tr.appendChild(td5);
-    tr.className = 'hh-hands-row';
-    cb.addEventListener('change', () => {
-      tr.classList.toggle('is-selected', cb.checked);
-    });
-    tr.addEventListener('click', (e) => {
-      if (e.target.closest('button')) return;
-      if (e.target.closest('input[type="checkbox"]')) return;
-      cb.checked = !cb.checked;
-      tr.classList.toggle('is-selected', cb.checked);
-    });
-    tb.appendChild(tr);
-  });
+async function createListFolder() {
+  await createListFolderUnder(undefined);
+}
+
+async function deleteFolderById(folderId) {
+  if (!folderId || !state.sb) return;
+  if (
+    !window.confirm(
+      'Supprimer ce dossier et ses sous-dossiers ? Les mains seront déplacées vers le dossier parent, ou vers « Non classées » si ce dossier est à la racine.'
+    )
+  ) {
+    return;
+  }
+  const row = state.folderRows.find((f) => String(f.id) === String(folderId));
+  const targetParent =
+    row && row.parent_id != null && row.parent_id !== '' ? row.parent_id : null;
+  const subtreeIds = collectFolderDescendantIds(folderId);
+  if (subtreeIds.length) {
+    const { error: upErr } = await state.sb
+      .from('hands')
+      .update({ folder_id: targetParent })
+      .in('folder_id', subtreeIds);
+    if (upErr) {
+      setMsg(upErr.message, 'err');
+      return;
+    }
+  }
+  const { error } = await state.sb.from('hh_folders').delete().eq('id', folderId);
+  if (error) {
+    setMsg(error.message, 'err');
+    return;
+  }
+  subtreeIds.forEach((id) => state.listExpandedFolderIds.delete(id));
+  if (
+    state.listTargetFolderId != null &&
+    subtreeIds.some((id) => String(id) === String(state.listTargetFolderId))
+  ) {
+    state.listTargetFolderId = null;
+  }
+  setMsg('Dossier supprimé.', 'ok');
+  await refreshList();
+}
+
+async function deleteListFolder() {
+  await deleteFolderById(state.listTargetFolderId);
+}
+
+async function renameFolderInDb(folderId, newName) {
+  if (!state.sb) return false;
+  const name = String(newName || '').trim();
+  if (!name) return false;
+  const { error } = await state.sb.from('hh_folders').update({ name }).eq('id', folderId);
+  if (error) {
+    setMsg(error.message, 'err');
+    return false;
+  }
+  setMsg('Dossier renommé.', 'ok');
+  await refreshList();
+  return true;
+}
+
+function ensureFolderBranchExpandedFor(folderId) {
+  let cur = folderId;
+  while (cur != null && cur !== '') {
+    state.listExpandedFolderIds.add(cur);
+    const f = state.folderRows.find((x) => String(x.id) === String(cur));
+    cur = f && f.parent_id != null && f.parent_id !== '' ? f.parent_id : null;
+  }
+}
+
+async function setHandFolder(handId, folderId) {
+  if (!state.sb) return;
+  const fid = folderId == null || folderId === '' ? null : folderId;
+  const { error } = await state.sb.from('hands').update({ folder_id: fid }).eq('id', handId);
+  if (error) {
+    setMsg(error.message, 'err');
+    await refreshList();
+    return;
+  }
+  if (fid) ensureFolderBranchExpandedFor(fid);
+  else state.listExpandedFolderIds.add(LIST_UC_EXPAND_KEY);
+  setMsg('Dossier de la main mis à jour.', 'ok');
+  await refreshList();
 }
 
 function loadHandIntoDraft(h) {
@@ -1401,6 +2022,7 @@ function loadHandIntoDraft(h) {
     antes_bb: h.antes_bb || [],
     hole_cards: h.hole_cards || {},
     timeline: h.timeline || [],
+    folder_id: h.folder_id != null && h.folder_id !== '' ? h.folder_id : null,
   };
   state.setupCollapsed = true;
   setMode('create');
@@ -1454,6 +2076,11 @@ async function saveHand() {
     return;
   }
   state.draft.title = $('hand-title').value.trim();
+  const handFolderSel = $('hand-folder-select');
+  if (handFolderSel) {
+    const fv = (handFolderSel.value || '').trim();
+    state.draft.folder_id = fv ? fv : null;
+  }
   normalizeDraftTags();
   if (!state.sb) state.sb = hhCreateClient(url, anonKey);
   const nn = HE().clampN(state.draft.player_count);
@@ -1476,6 +2103,7 @@ async function saveHand() {
     antes_bb: state.draft.antes_bb,
     hole_cards: state.draft.hole_cards,
     timeline: state.draft.timeline,
+    folder_id: state.draft.folder_id != null && state.draft.folder_id !== '' ? state.draft.folder_id : null,
   };
   if (saveHandInFlight) return;
   saveHandInFlight = true;
@@ -1638,6 +2266,53 @@ function isBlockingModalOpen() {
   return false;
 }
 
+function canUseCreateArrowShortcuts() {
+  if (state.mode !== 'create' || !state.draft || !state.setupCollapsed) return false;
+  const ed = $('create-editor');
+  if (!ed || ed.hidden) return false;
+  return true;
+}
+
+/** Création (table prête) : ← fil d’Ariane, → Fold, ↓ Check/Call, ↑ Raise/Bet + focus montant */
+function onCreateKeyboardNav(ev) {
+  if (!canUseCreateArrowShortcuts()) return;
+  if (isBlockingModalOpen()) return;
+  if (isTypingInField(ev.target)) return;
+  const k = ev.key;
+  if (k !== 'ArrowLeft' && k !== 'ArrowRight' && k !== 'ArrowUp' && k !== 'ArrowDown') return;
+
+  const ac = totalActions(state.draft.timeline);
+  const st = HE().computeHandState(state.draft, ac);
+
+  if (k === 'ArrowRight') {
+    const fold = st.legal.find((L) => L.type === 'fold');
+    if (!fold) return;
+    ev.preventDefault();
+    appendAction(fold.label);
+    return;
+  }
+  if (k === 'ArrowDown') {
+    const check = st.legal.find((L) => L.type === 'check');
+    const call = st.legal.find((L) => L.type === 'call');
+    const leg = check || call;
+    if (!leg) return;
+    ev.preventDefault();
+    appendAction(leg.label);
+    return;
+  }
+  if (k === 'ArrowUp') {
+    const raiseLeg = st.legal.find((L) => L.type === 'raise');
+    if (!raiseLeg) return;
+    ev.preventDefault();
+    openRaiseRowForLegal(raiseLeg);
+    return;
+  }
+  if (k === 'ArrowLeft') {
+    ev.preventDefault();
+    goBackOneCreateBreadcrumbStep();
+  }
+}
+
 /** Visualisation : ←/→ actions, ↑/↓ main précédente / suivante */
 function onViewKeyboardNav(ev) {
   if (state.mode !== 'view' || !state.viewHand) return;
@@ -1680,7 +2355,10 @@ function onViewKeyboardNav(ev) {
 
 function wireEvents() {
   document.querySelectorAll('#mode-nav button').forEach((b) => {
-    b.addEventListener('click', () => setMode(b.dataset.mode));
+    b.addEventListener('click', () => {
+      if (b.dataset.mode === 'create') state.assignFolderFromListToNextDraft = false;
+      setMode(b.dataset.mode);
+    });
   });
   $('btn-expand-setup').addEventListener('click', () => expandSetupPanel());
   $('setup-cancel').addEventListener('click', () => {
@@ -1696,6 +2374,10 @@ function wireEvents() {
     if (!r) return;
     const prev = state.draft;
     state.draft = Object.assign(emptyDraft(), prev || {}, r);
+    if (!prev && state.assignFolderFromListToNextDraft) {
+      state.draft.folder_id = state.folderForNextNewDraft != null ? state.folderForNextNewDraft : null;
+    }
+    state.assignFolderFromListToNextDraft = false;
     state.setupCollapsed = true;
     populateSetupSummary();
     updateCreateSetupPanelDom();
@@ -1704,6 +2386,17 @@ function wireEvents() {
   });
   const pc = $('form-setup').querySelector('[name="player_count"]');
   if (pc) pc.addEventListener('change', onPlayerCountInput);
+  const btnCancelCreate = $('btn-cancel-create-hand');
+  if (btnCancelCreate) btnCancelCreate.addEventListener('click', () => cancelCreateHand());
+  const handFolderSelect = $('hand-folder-select');
+  if (handFolderSelect && handFolderSelect.dataset.hhWired !== '1') {
+    handFolderSelect.dataset.hhWired = '1';
+    handFolderSelect.addEventListener('change', () => {
+      if (!state.draft) return;
+      const v = (handFolderSelect.value || '').trim();
+      state.draft.folder_id = v ? v : null;
+    });
+  }
   $('btn-save-hand').addEventListener('click', () => {
     void saveHand();
   });
@@ -1747,13 +2440,29 @@ function wireEvents() {
     });
   }
   $('btn-raise-ok').addEventListener('click', () => onRaiseOk());
+  const raiseInp = $('raise-amount');
+  if (raiseInp) {
+    raiseInp.addEventListener('keydown', (ev) => {
+      if (ev.key !== 'Enter') return;
+      ev.preventDefault();
+      onRaiseOk();
+    });
+  }
   $('btn-round-end').addEventListener('click', () => pushRoundEnd());
   $('btn-board').addEventListener('click', () => openBoardModal());
   $('card-picker-cancel').addEventListener('click', () => onCardPickerCancel());
   $('card-picker-ok').addEventListener('click', () => onCardPickerOk());
   $('btn-list-refresh').addEventListener('click', () => refreshList());
-  $('btn-list-create').addEventListener('click', () => setMode('create'));
-  $('list-tag-filter').addEventListener('input', () => renderListTable());
+  $('btn-list-create').addEventListener('click', () => {
+    state.assignFolderFromListToNextDraft = true;
+    state.folderForNextNewDraft = state.listTargetFolderId;
+    setMode('create');
+  });
+  const btnFolderNew = $('btn-folder-new');
+  if (btnFolderNew) btnFolderNew.addEventListener('click', () => void createListFolder());
+  const btnFolderDel = $('btn-folder-delete');
+  if (btnFolderDel) btnFolderDel.addEventListener('click', () => void deleteListFolder());
+  $('list-tag-filter').addEventListener('input', () => renderUnifiedList());
   $('btn-list-view-selected').addEventListener('click', () => {
     const ids = [];
     $('hands-tbody').querySelectorAll('input[type=checkbox]:checked').forEach((cb) => ids.push(cb.dataset.id));
@@ -1796,6 +2505,7 @@ function wireEvents() {
     loadViewHand();
   });
   document.addEventListener('keydown', onViewKeyboardNav);
+  document.addEventListener('keydown', onCreateKeyboardNav);
 }
 
 function wireViewHoleClicks() {
@@ -1817,6 +2527,7 @@ function wireViewHoleClicks() {
 }
 
 function init() {
+  state.listExpandedFolderIds.add(LIST_UC_EXPAND_KEY);
   fillFirstActSelect(6);
   renderSetupGrids(6);
   wireEvents();

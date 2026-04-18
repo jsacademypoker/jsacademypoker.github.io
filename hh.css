@@ -187,6 +187,30 @@ body {
   align-items: flex-start;
 }
 
+.hh-create-title-folder-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1.25rem;
+}
+
+.hh-create-title-folder-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  max-width: none;
+}
+
+.hh-create-title-folder-label:first-child .hh-input {
+  max-width: 280px;
+}
+
+.hh-select-create-folder {
+  min-width: 12rem;
+  width: min(100%, 22rem);
+  max-width: 22rem;
+}
+
 .hh-tags-block {
   display: flex;
   flex-direction: row;
@@ -310,6 +334,11 @@ body {
 .hh-btn--danger {
   border-color: rgba(255, 100, 80, 0.45);
   color: #ffcdd2;
+}
+
+.hh-btn--small {
+  padding: 0.28rem 0.5rem;
+  font-size: 0.74rem;
 }
 
 .hh-btn:disabled {
@@ -448,8 +477,33 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.5rem 0.75rem;
   margin: 0.5rem 0;
+  width: 100%;
+}
+
+.hh-action-bar-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1 1 auto;
+  min-width: min(100%, 12rem);
+}
+
+.hh-raise-feedback {
+  flex: 0 1 auto;
+  margin-left: auto;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 0;
+  max-width: min(18rem, 100%);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #ff8a80;
+  text-align: right;
+  align-self: center;
 }
 
 .hh-action-bar {
@@ -471,11 +525,74 @@ body {
 }
 
 .hh-table-wrap {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.35rem;
   margin: 5rem 0;
+}
+
+.hh-create-keyboard-hints {
+  position: absolute;
+  top: -5rem;
+  right: 5rem;
+  z-index: 8;
+  max-width: 12.5rem;
+  padding: 0.42rem 0.55rem 0.48rem;
+  border-radius: 8px;
+  border: 1px solid rgba(197, 160, 89, 0.35);
+  background: rgba(12, 18, 15, 0.92);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  user-select: none;
+}
+
+.hh-create-keyboard-hints-title {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hh-muted);
+  margin: 0 0 0.28rem;
+}
+
+.hh-create-keyboard-hints-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.68rem;
+  line-height: 1.45;
+  color: rgba(236, 242, 238, 0.92);
+}
+
+.hh-create-keyboard-hints-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.hh-create-keyboard-hints-list kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height : 1.5rem;
+  padding: 0.06rem 0.28rem;
+  border-radius: 4px;
+  border: 1px solid rgba(197, 160, 89, 0.4);
+  background: rgba(30, 42, 34, 0.95);
+  font-size: 1rem;
+  font-family: inherit;
+  font-weight: 700;
+  color: rgba(255, 230, 190, 0.95);
+}
+
+.hh-kbd-hint-note {
+  font-size: 0.62rem;
+  color: var(--hh-muted);
+  font-weight: 500;
 }
 
 .poker-table {
@@ -1377,6 +1494,180 @@ body {
   font-size: 1.05rem;
 }
 
+.hh-muted {
+  color: var(--hh-muted);
+}
+
+.hh-folder-toggle {
+  flex: 0 0 auto;
+  width: 1.35rem;
+  height: 1.35rem;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--hh-muted);
+  font-size: 0.65rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hh-folder-toggle:disabled {
+  opacity: 0.35;
+  cursor: default;
+  background: transparent;
+}
+
+.hh-table-list--unified tbody tr.hh-list-folder-row {
+  cursor: default;
+}
+
+.hh-list-folder-cell {
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.hh-list-folder-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  min-height: 1.6rem;
+}
+
+.hh-folder-toggle--table {
+  flex-shrink: 0;
+}
+
+.hh-list-folder-title-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* flex-grow 0 : la zone cliquable = largeur du texte seulement (pas toute la ligne) */
+.hh-list-folder-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hh-list-folder-name:hover {
+  background: rgba(197, 160, 89, 0.12);
+}
+
+/* « Non classées » : pas de surbrillance sur le libellé seul (le hover reste sur toute la ligne). */
+.hh-list-uc-row .hh-list-folder-name:hover {
+  background: transparent;
+}
+
+.hh-list-folder-rename-box {
+  display: inline-grid;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+/* display:inline-grid gagnait sur l’attribut HTML hidden (même cas que .hh-raise-row) */
+.hh-list-folder-rename-box[hidden] {
+  display: none !important;
+}
+
+.hh-list-folder-rename-box > * {
+  grid-area: 1 / 1;
+}
+
+.hh-list-folder-rename-sizer {
+  visibility: hidden;
+  white-space: pre;
+  padding: 0.15rem 0.35rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.hh-list-folder-rename-input {
+  width: 100%;
+  min-width: 2.5ch;
+  margin: 0;
+  padding: 0.15rem 0.35rem;
+  border-radius: 8px;
+  border: 1px solid rgba(197, 160, 89, 0.25);
+  background: #0a0e0c;
+  color: var(--hh-text);
+  font: inherit;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.hh-list-folder-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0.15rem 0.35rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--hh-text);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hh-list-folder-main:hover {
+  background: rgba(197, 160, 89, 0.12);
+}
+
+.hh-list-folder-actions {
+  flex-shrink: 0;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.hh-list-folder-row.is-target-folder .hh-list-folder-cell {
+  box-shadow: inset 3px 0 0 rgba(197, 160, 89, 0.85);
+}
+
+.hh-list-folder-row.hh-drop-target .hh-list-folder-cell {
+  background: rgba(197, 160, 89, 0.22);
+  outline: 1px dashed rgba(197, 160, 89, 0.55);
+}
+
+.hh-table-list--unified tbody tr.hh-list-folder-row:hover .hh-list-folder-cell {
+  background: rgba(197, 160, 89, 0.1);
+}
+
+.hh-table-list--unified tbody tr.hh-list-folder-row.hh-drop-target:hover .hh-list-folder-cell {
+  background: rgba(197, 160, 89, 0.26);
+}
+
+.hh-hand-row--draggable {
+  cursor: grab;
+}
+
+.hh-hand-row--draggable.hh-hand-row--dragging {
+  cursor: grabbing;
+  opacity: 0.85;
+}
+
 .hh-table-list {
   width: 100%;
   border-collapse: collapse;
@@ -1396,6 +1687,14 @@ body {
 
 .hh-table-list tbody tr.hh-hands-row.is-selected {
   background: rgba(197, 160, 89, 0.12);
+}
+
+.hh-table-list tbody tr.hh-hands-row:hover {
+  background: rgba(197, 160, 89, 0.07);
+}
+
+.hh-table-list tbody tr.hh-hands-row.is-selected:hover {
+  background: rgba(197, 160, 89, 0.17);
 }
 
 .hh-tag {

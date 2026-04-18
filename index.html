@@ -22,6 +22,7 @@
 
           <section id="panel-create" hidden>
             <div class="hh-panel-block hh-create-toolbar">
+              <button type="button" class="hh-btn" id="btn-cancel-create-hand">Annuler</button>
               <button type="button" class="hh-btn hh-btn--primary" id="btn-save-hand">
                 <span class="hh-btn-save-inner">
                   <span class="hh-btn-save-spinner" aria-hidden="true"></span>
@@ -73,17 +74,23 @@
                   </section>
                   <div class="hh-create-setup-actions">
                     <button type="button" class="hh-btn" id="setup-cancel">Annuler</button>
-                    <button type="submit" class="hh-btn hh-btn--primary">Valider</button>
+                    <button type="submit" class="hh-btn hh-btn--primary">Continuer</button>
                   </div>
                 </form>
               </div>
             </div>
             <div class="hh-panel-block" id="create-editor" hidden>
               <div class="hh-toolbar hh-create-editor-toolbar">
-                <label class="hh-label" style="display: inline-flex; align-items: center; gap: 0.35rem; max-width: none">
-                  Titre
-                  <input type="text" class="hh-input" id="hand-title" style="max-width: 280px" />
-                </label>
+                <div class="hh-create-title-folder-row">
+                  <label class="hh-label hh-create-title-folder-label">
+                    Titre
+                    <input type="text" class="hh-input" id="hand-title" />
+                  </label>
+                  <label class="hh-label hh-create-title-folder-label">
+                    Dossier
+                    <select id="hand-folder-select" class="hh-select hh-select-create-folder" aria-label="Dossier de la main"></select>
+                  </label>
+                </div>
                 <div class="hh-tags-block">
                   <span class="hh-label hh-tags-block-title">Tags</span>
                   <div class="hh-tags-stack">
@@ -106,17 +113,29 @@
               <div id="hole-card-grid" class="hh-grid"></div>
               <div class="hh-breadcrumb" id="breadcrumb"></div>
               <div class="hh-action-bar-wrap">
-                <div class="hh-action-bar" id="action-bar"></div>
-                <div class="hh-raise-row" id="raise-row" hidden>
-                  <input type="number" step="0.01" min="0" id="raise-amount" />
-                  <button type="button" class="hh-btn hh-btn--primary" id="btn-raise-ok">OK</button>
+                <div class="hh-action-bar-cluster">
+                  <div class="hh-action-bar" id="action-bar"></div>
+                  <div class="hh-raise-row" id="raise-row" hidden>
+                    <input type="number" step="0.01" min="0" id="raise-amount" />
+                    <button type="button" class="hh-btn hh-btn--primary" id="btn-raise-ok">OK</button>
+                  </div>
                 </div>
+                <p class="hh-raise-feedback" id="raise-feedback" role="status" aria-live="polite" hidden></p>
               </div>
               <div class="hh-toolbar" style="margin-top: 0.65rem">
                 <button type="button" class="hh-btn" id="btn-round-end" hidden>Fermer le tour d’enchères</button>
                 <button type="button" class="hh-btn hh-btn--primary" id="btn-board" hidden>Ajouter board</button>
               </div>
               <div class="hh-table-wrap">
+                <aside class="hh-create-keyboard-hints" aria-label="Raccourcis clavier (création)">
+                  <div class="hh-create-keyboard-hints-title">Raccourcis</div>
+                  <ul class="hh-create-keyboard-hints-list">
+                    <li><kbd>→</kbd> Fold</li>
+                    <li><kbd>↓</kbd> Check / Call</li>
+                    <li><kbd>↑</kbd> Bet / Raise <span class="hh-kbd-hint-note"></span></li>
+                    <li><kbd>←</kbd> Retour <span class="hh-kbd-hint-note"></span></li>
+                  </ul>
+                </aside>
                 <div class="poker-table" id="poker-table"></div>
               </div>
             </div>
@@ -125,15 +144,21 @@
           <section id="panel-list" hidden>
             <div class="hh-panel-block hh-toolbar">
               <button type="button" class="hh-btn hh-btn--primary" id="btn-list-create">Créer une main</button>
+              <button type="button" class="hh-btn hh-btn--small" id="btn-folder-new" title="Nouveau dossier (dossier cible ci‑dessous ou racine)">
+                + Dossier
+              </button>
+              <button type="button" class="hh-btn hh-btn--small hh-btn--danger" id="btn-folder-delete" hidden>
+                Supprimer le dossier
+              </button>
               <label class="hh-label" style="max-width: none; display: flex; flex-direction: column; gap: 0.2rem">
-                Filtrer par tags (OR)
+                Filtrer par tags
                 <input type="text" class="hh-input" id="list-tag-filter" style="max-width: 320px" placeholder="tag1, tag2" />
               </label>
               <button type="button" class="hh-btn" id="btn-list-refresh">Actualiser</button>
               <button type="button" class="hh-btn hh-btn--primary" id="btn-list-view-selected">Visualiser la sélection</button>
             </div>
             <div class="hh-panel-block" style="overflow: auto">
-              <table class="hh-table-list" id="hands-table">
+              <table class="hh-table-list hh-table-list--unified" id="hands-table">
                 <thead>
                   <tr>
                     <th></th>
