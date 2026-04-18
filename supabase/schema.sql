@@ -12,6 +12,8 @@ create table if not exists public.hands (
   big_blind_bb numeric not null check (big_blind_bb > 0),
   dead_money_bb numeric not null default 0 check (dead_money_bb >= 0),
   tags text[] not null default '{}',
+  -- Noms optionnels par siège (même ordre que stacks_bb / positions) ; chaîne vide = libellé de position seul.
+  player_names jsonb not null default '[]'::jsonb,
   stacks_bb jsonb not null,
   -- Mises obligatoires par siège avant distribution (SB, BB, straddles…), pas les antes.
   antes_bb jsonb not null default '[]'::jsonb,
@@ -35,3 +37,6 @@ create policy "hands_anon_all"
 
 grant usage on schema public to anon;
 grant all on table public.hands to anon;
+
+-- Bases déjà créées sans cette colonne :
+-- alter table public.hands add column if not exists player_names jsonb not null default '[]'::jsonb;

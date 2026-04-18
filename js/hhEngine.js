@@ -9,6 +9,20 @@
     return Math.max(2, Math.min(10, Math.floor(Number(n)) || 2));
   }
 
+  /** Libellé affiché par siège : nom saisi si non vide, sinon position (BTN, UTG…). */
+  function seatDisplayLabels(hand) {
+    const n = clampN(hand.player_count);
+    const pos = TP().positionLabelsForPlayerCount(n);
+    const raw = hand && hand.player_names;
+    const out = [];
+    for (let i = 0; i < n; i += 1) {
+      let custom = '';
+      if (Array.isArray(raw) && typeof raw[i] === 'string') custom = raw[i].trim();
+      out.push(custom || pos[i]);
+    }
+    return out;
+  }
+
   /**
    * Mises obligatoires par siège avant distribution (SB, BB, straddles, etc.).
    * Colonne JSON `antes_bb` : historique du nom ; ne contient plus d’antes par joueur.
@@ -219,6 +233,7 @@
     const replay = RNk.replayNavStateStreet(n, streetActions, firstToActStreet, replayOpts);
     const potDisplay = potCarried + sumCommitted(replay.committed);
     const stacksBehind = stacks0.map((s, i) => Math.max(0, s - invested[i]));
+    const seatLabs = seatDisplayLabels(hand);
 
     let activePlayerCount = 0;
     for (let ai = 0; ai < n; ai += 1) {
@@ -226,7 +241,7 @@
     }
     const isHandFinished = activePlayerCount <= 1;
 
-    const crumbs = RNk.navPathCrumbLabels(n, streetActions, firstToActStreet, carryReplayOpts());
+    const crumbs = RNk.navPathCrumbLabels(n, streetActions, firstToActStreet, carryReplayOpts(), seatLabs);
     const lastInc = computeLastRaiseIncrement(
       streetActions,
       firstToActStreet,
@@ -411,6 +426,7 @@
   function globalNavCrumbs(hand, actionCursor) {
     const RNk = RN();
     const n = clampN(hand.player_count);
+    const seatLabs = seatDisplayLabels(hand);
     const firstPreflop = resolveFirstToActPreflop(hand, n);
     const sbBb = Math.max(1e-9, Number(hand.small_blind_bb) || 0.5);
     const bbBb = Math.max(1e-9, Number(hand.big_blind_bb) || 1);
@@ -452,7 +468,7 @@
         if (d > 0) invested[i] += d;
       }
       streetActions.push(label);
-      const seg = RNk.navPathCrumbLabels(n, streetActions, firstToActStreet, carryReplayOptsGn());
+      const seg = RNk.navPathCrumbLabels(n, streetActions, firstToActStreet, carryReplayOptsGn(), seatLabs);
       entries.push({ kind: 'action', label: seg[seg.length - 1], actionIndex: appliedActions });
     }
 
@@ -509,6 +525,7 @@
 
   global.HHEngine = {
     clampN,
+    seatDisplayLabels,
     normalizePosted,
     /** @deprecated alias de normalizePosted (colonne `antes_bb` = mises devant). */
     normalizeAntes: normalizePosted,

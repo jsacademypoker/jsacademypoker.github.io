@@ -766,6 +766,13 @@ body {
   overflow: visible;
 }
 
+/* Marge latérale : sans ça, overflow:hidden du clip coupe les coins des dos inclinés → filets verticaux */
+.poker-table--hh .hh-seat-cards-clip:not(.hh-seat-cards-clip--empty) {
+  padding-left: 0.45rem;
+  padding-right: 0.45rem;
+  max-width: 7rem;
+}
+
 .hh-hole-cards {
   display: flex;
   flex-direction: row;
@@ -846,6 +853,11 @@ body {
 .poker-table--hh .hh-hole-cards > .hh-playing-card--back.hh-playing-card--tilt-r {
   transform-origin: top center;
   transform: rotate(5deg);
+}
+
+/* Ombre portée « droite » sur la boîte layout : reste lisible comme cadre vertical au bord du clip ; on garde un léger inset seulement */
+.poker-table--hh .hh-hole-cards > .hh-playing-card--back {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 /* Trou : pas de caractère de couleur — fond teinté par enseigne */
@@ -957,11 +969,13 @@ body {
   z-index: 2;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
-  margin: -0.38rem 0 0;
-  padding: 0.22rem 0.5rem 0.26rem;
+  /* Quelques px de recouvrement sur le bas des cartes (fenêtre du clip) */
+  margin: -6px 0 0;
+  padding: 0.2rem 0.5rem 0.24rem;
   max-width: 100%;
+  min-width: 4.5rem;
   background: linear-gradient(180deg, rgba(38, 46, 54, 0.94) 0%, rgba(18, 24, 30, 0.96) 100%);
   border: 1px solid rgba(88, 102, 112, 0.55);
   border-radius: 9px;
@@ -970,7 +984,42 @@ body {
   line-height: 1.12;
 }
 
+.poker-table--hh .hh-seat-stack-player {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.02rem 0 0;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(245, 238, 220, 0.96);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+}
+
+.poker-table--hh .hh-seat-stack-sep {
+  flex-shrink: 0;
+  width: 100%;
+  height: 0;
+  margin: 0.12rem 0 0.1rem;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.poker-table--hh .hh-seat-stack--meta.hh-seat-stack--allin .hh-seat-stack-sep {
+  border-top-color: rgba(255, 150, 165, 0.38);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+}
+
+.poker-table--hh .hh-seat-stack--allin .hh-seat-stack-player {
+  color: rgba(255, 205, 210, 0.96);
+}
+
 .poker-table--hh .hh-seat-stack-value {
+  align-self: center;
   font-size: 0.74rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;

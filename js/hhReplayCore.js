@@ -149,13 +149,17 @@
     return { activeSeat: actor, committed, folded, allInSeat, maxCommit };
   }
 
-  function navPathCrumbLabels(n, navPath, firstToActIndex, replayOpts) {
+  function navPathCrumbLabels(n, navPath, firstToActIndex, replayOpts, seatLabelsOverride) {
     const Tp = TP();
-    const seatLabels = Tp.positionLabelsForPlayerCount(n);
+    const nn = Math.max(2, Math.min(10, Math.floor(Number(n)) || 2));
+    const seatLabels =
+      Array.isArray(seatLabelsOverride) && seatLabelsOverride.length >= nn
+        ? seatLabelsOverride
+        : Tp.positionLabelsForPlayerCount(nn);
     const safeFirst =
-      Number.isFinite(firstToActIndex) && firstToActIndex >= 0 && firstToActIndex < n
+      Number.isFinite(firstToActIndex) && firstToActIndex >= 0 && firstToActIndex < nn
         ? firstToActIndex
-        : Tp.defaultFirstToActIndex(n);
+        : Tp.defaultFirstToActIndex(nn);
     const folded = new Set();
     if (replayOpts && replayOpts.initialFolded) {
       const initF = replayOpts.initialFolded;
@@ -163,15 +167,15 @@
       else if (Array.isArray(initF)) initF.forEach((s) => folded.add(s));
     }
     let actor = safeFirst;
-    for (let guard = 0; guard < n; guard += 1) {
+    for (let guard = 0; guard < nn; guard += 1) {
       if (!folded.has(actor)) break;
-      actor = (actor + 1) % n;
+      actor = (actor + 1) % nn;
     }
     const out = [];
     for (let i = 0; i < navPath.length; i += 1) {
       out.push(seatLabels[actor] + ' ' + navPath[i]);
       if (isFoldAction(navPath[i])) folded.add(actor);
-      actor = nextSeatStillInHand(n, folded, actor);
+      actor = nextSeatStillInHand(nn, folded, actor);
     }
     return out;
   }

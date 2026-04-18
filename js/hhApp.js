@@ -85,6 +85,7 @@ function emptyDraft() {
     tags: [],
     stacks_bb: [],
     antes_bb: [],
+    player_names: [],
     hole_cards: {},
     timeline: [],
   };
@@ -193,23 +194,36 @@ function renderSetupGrids(n) {
   const labels = TP().positionLabelsForPlayerCount(nn);
   const blinds = TP().blindSeatIndices(nn);
   for (let i = 0; i < nn; i += 1) {
+    const dSt = state.draft;
     const wrapS = document.createElement('div');
     const labS = document.createElement('label');
     labS.className = 'hh-label';
     labS.textContent = labels[i];
+    const inpName = document.createElement('input');
+    inpName.className = 'hh-input hh-setup-player-name';
+    inpName.type = 'text';
+    inpName.maxLength = 48;
+    inpName.placeholder = 'Nom (facultatif)';
+    inpName.dataset.seat = String(i);
+    inpName.setAttribute('autocomplete', 'off');
+    const prevNm =
+      dSt && Array.isArray(dSt.player_names) && typeof dSt.player_names[i] === 'string'
+        ? dSt.player_names[i]
+        : '';
+    inpName.value = prevNm;
     const inpS = document.createElement('input');
-    inpS.className = 'hh-input';
+    inpS.className = 'hh-input hh-setup-stack';
     inpS.type = 'number';
     inpS.step = '0.01';
     inpS.min = '0';
     inpS.dataset.seat = String(i);
-    const dSt = state.draft;
     const prevStack =
       dSt && Array.isArray(dSt.stacks_bb) && dSt.stacks_bb.length >= nn
         ? Number(dSt.stacks_bb[i]) || 0
         : null;
     inpS.value = prevStack != null && prevStack > 0 ? String(prevStack) : '100';
     wrapS.appendChild(labS);
+    wrapS.appendChild(inpName);
     wrapS.appendChild(inpS);
     stacks.appendChild(wrapS);
 
@@ -254,7 +268,13 @@ function readSetupForm() {
   }
   const stacks_bb = [];
   const antes_bb = [];
-  $('setup-stacks').querySelectorAll('input').forEach((inp) => {
+  const player_names = [];
+  for (let i = 0; i < n; i += 1) player_names[i] = '';
+  $('setup-stacks').querySelectorAll('input.hh-setup-player-name').forEach((inp) => {
+    const si = Number(inp.dataset.seat);
+    if (si >= 0 && si < n) player_names[si] = String(inp.value || '').trim();
+  });
+  $('setup-stacks').querySelectorAll('input.hh-setup-stack').forEach((inp) => {
     stacks_bb[Number(inp.dataset.seat)] = Math.max(0, Number(inp.value) || 0);
   });
   $('setup-antes').querySelectorAll('input').forEach((inp) => {
@@ -269,6 +289,7 @@ function readSetupForm() {
     first_to_act: fta,
     stacks_bb,
     antes_bb,
+    player_names,
   };
 }
 
@@ -460,7 +481,7 @@ function openCardPickerModal(ctx) {
   }
   const title = $('card-picker-title');
   const help = $('card-picker-help');
-  const labels = TP().positionLabelsForPlayerCount(HE().clampN(state.draft.player_count));
+  const labels = HE().seatDisplayLabels(state.draft);
   if (title) {
     if (ctx.type === 'hole') {
       title.textContent = 'Main — ' + labels[ctx.seat];
@@ -528,7 +549,7 @@ function renderHoleCardGrid() {
   const g = $('hole-card-grid');
   if (!g || !state.draft) return;
   const n = HE().clampN(state.draft.player_count);
-  const labels = TP().positionLabelsForPlayerCount(n);
+  const labels = HE().seatDisplayLabels(state.draft);
   g.innerHTML = '';
 
   function appendBack(card, idx) {
@@ -953,12 +974,14 @@ function ensureSeatDockForStack(seat) {
   return dock;
 }
 
-function paintSeatStacks(tableRoot, stacksBehind, folded, committed, allInSeat) {
+function paintSeatStacks(tableRoot, stacksBehind, folded, committed, allInSeat, hand) {
   if (!tableRoot || !Array.isArray(stacksBehind)) return;
   const foldedSet = folded || new Set();
   const committedArr = committed || [];
   const allInArr = allInSeat || [];
   tableRoot.querySelectorAll('.hh-seat-stack').forEach((el) => el.remove());
+  tableRoot.querySelectorAll('.hh-seat-name').forEach((el) => el.remove());
+  const seatLabels = hand ? HE().seatDisplayLabels(hand) : null;
   const seats = tableRoot.querySelectorAll('.poker-table-seat');
   for (let i = 0; i < seats.length; i += 1) {
     if (i >= stacksBehind.length) continue;
@@ -967,20 +990,35 @@ function paintSeatStacks(tableRoot, stacksBehind, folded, committed, allInSeat) 
     const isAllInUi =
       !foldedSet.has(i) &&
       ((allInArr[i] === true) || (stackBb <= 1e-9 && potStreet > 1e-9));
+    const dock = ensureSeatDockForStack(seats[i]);
     const el = document.createElement('div');
     el.className = 'hh-seat-stack hh-seat-stack--meta' + (isAllInUi ? ' hh-seat-stack--allin' : '');
     const val = document.createElement('span');
     val.className = 'hh-seat-stack-value';
     if (isAllInUi) {
       val.textContent = 'All-in';
-      el.setAttribute('aria-label', 'All-in');
+      const whoAi = seatLabels && seatLabels[i] ? seatLabels[i] + ' — ' : '';
+      el.setAttribute('aria-label', whoAi + 'All-in');
     } else {
       const t = RN().formatBb(stacksBehind[i]) + ' bb';
       val.textContent = t;
-      el.setAttribute('aria-label', 'Stack : ' + t);
+      const who = seatLabels && seatLabels[i] ? seatLabels[i] + ' — ' : '';
+      el.setAttribute('aria-label', who + 'Stack : ' + t);
     }
+    if (seatLabels && seatLabels[i]) {
+      const nameRow = document.createElement('div');
+      nameRow.className = 'hh-seat-stack-player';
+      nameRow.textContent = seatLabels[i];
+      nameRow.setAttribute('aria-hidden', 'true');
+      const sep = document.createElement('div');
+      sep.className = 'hh-seat-stack-sep';
+      sep.setAttribute('aria-hidden', 'true');
+      el.appendChild(nameRow);
+      el.appendChild(sep);
+    }
+    val.setAttribute('aria-hidden', 'true');
     el.appendChild(val);
-    ensureSeatDockForStack(seats[i]).appendChild(el);
+    dock.appendChild(el);
   }
 }
 
@@ -1011,7 +1049,7 @@ function shouldForceRevealAllHoles(st) {
 function renderPokerTable(tableRoot, hand, actionCursor, interactiveSeat, hideCards, hideBoard, holeUiMode, viewOpts) {
   if (!tableRoot || !hand) return;
   const n = HE().clampN(hand.player_count);
-  const labels = TP().positionLabelsForPlayerCount(n);
+  const labels = HE().seatDisplayLabels(hand);
   const ac = actionCursor == null ? totalActions(hand.timeline) : actionCursor;
   const st = HE().computeHandState(hand, ac);
   const dead = Number(hand.dead_money_bb) || 0;
@@ -1040,7 +1078,7 @@ function renderPokerTable(tableRoot, hand, actionCursor, interactiveSeat, hideCa
         }
       : undefined;
   paintCardsOnTable(tableRoot, hand, st, hideCards, mode, holeOpts);
-  paintSeatStacks(tableRoot, st.stacksBehind, st.replay.folded, st.replay.committed, st.replay.allInSeat);
+  paintSeatStacks(tableRoot, st.stacksBehind, st.replay.folded, st.replay.committed, st.replay.allInSeat, hand);
 }
 
 function onSeatClickCreate(seat) {
@@ -1358,6 +1396,7 @@ function loadHandIntoDraft(h) {
     big_blind_bb: Number(h.big_blind_bb),
     dead_money_bb: Number(h.dead_money_bb) || 0,
     tags: h.tags || [],
+    player_names: Array.isArray(h.player_names) ? h.player_names.slice() : [],
     stacks_bb: h.stacks_bb || [],
     antes_bb: h.antes_bb || [],
     hole_cards: h.hole_cards || {},
@@ -1417,6 +1456,13 @@ async function saveHand() {
   state.draft.title = $('hand-title').value.trim();
   normalizeDraftTags();
   if (!state.sb) state.sb = hhCreateClient(url, anonKey);
+  const nn = HE().clampN(state.draft.player_count);
+  const rawNames = state.draft.player_names || [];
+  const player_names = [];
+  for (let i = 0; i < nn; i += 1) {
+    player_names[i] = typeof rawNames[i] === 'string' ? rawNames[i].trim() : '';
+  }
+  state.draft.player_names = player_names;
   const row = {
     title: state.draft.title,
     player_count: state.draft.player_count,
@@ -1425,6 +1471,7 @@ async function saveHand() {
     big_blind_bb: state.draft.big_blind_bb,
     dead_money_bb: state.draft.dead_money_bb,
     tags: state.draft.tags,
+    player_names,
     stacks_bb: state.draft.stacks_bb,
     antes_bb: state.draft.antes_bb,
     hole_cards: state.draft.hole_cards,
