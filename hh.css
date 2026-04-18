@@ -1341,6 +1341,14 @@ body {
   text-align: left;
 }
 
+.hh-table-list tbody tr.hh-hands-row {
+  cursor: pointer;
+}
+
+.hh-table-list tbody tr.hh-hands-row.is-selected {
+  background: rgba(197, 160, 89, 0.12);
+}
+
 .hh-tag {
   display: inline-block;
   margin: 0.1rem 0.15rem 0 0;

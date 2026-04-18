@@ -1332,6 +1332,16 @@ function renderListTable() {
     });
     td5.appendChild(b3);
     tr.appendChild(td5);
+    tr.className = 'hh-hands-row';
+    cb.addEventListener('change', () => {
+      tr.classList.toggle('is-selected', cb.checked);
+    });
+    tr.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return;
+      if (e.target.closest('input[type="checkbox"]')) return;
+      cb.checked = !cb.checked;
+      tr.classList.toggle('is-selected', cb.checked);
+    });
     tb.appendChild(tr);
   });
 }
