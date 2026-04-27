@@ -751,13 +751,26 @@ body {
   border-radius: 50%;
   z-index: 2;
   overflow: hidden;
-  background-color: #0e3024;
+  background-color: #121619;
   background-image:
-    radial-gradient(ellipse 95% 88% at 50% 38%, rgba(45, 120, 82, 0.55) 0%, transparent 58%),
-    radial-gradient(ellipse 70% 65% at 50% 52%, #1a6b4a 0%, #0d3d2a 48%, #061f16 100%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.14'/%3E%3C/svg%3E");
+    radial-gradient(ellipse 95% 88% at 50% 34%, rgba(255, 255, 255, 0.07) 0%, transparent 54%),
+    radial-gradient(ellipse 72% 68% at 50% 52%, #1d242d 0%, #121619 46%, #0e1218 72%, #0a0d11 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E");
   background-size: auto, auto, 280px 280px;
-  border: 1px solid rgba(55, 110, 85, 0.55);
+  border: 1px solid rgba(55, 68, 78, 0.55);
+}
+
+/* Filigrane JS Academy (logo carré transparent), centré, faible opacité */
+.poker-table-felt::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: url('assets/Logo JS Academy 3.1 seul transparent carré.png') no-repeat center;
+  background-size: min(38%, 8.5rem) auto;
+  opacity: 0.23;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .poker-table-felt-stats {
